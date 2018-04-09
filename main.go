@@ -19,6 +19,7 @@ import (
 	"SLALite/assessment"
 	"SLALite/assessment/monitor/dummyadapter"
 	"SLALite/model"
+	"SLALite/repositories/cimi"
 	"SLALite/repositories/memrepository"
 	"SLALite/repositories/mongodb"
 	"SLALite/repositories/validation"
@@ -44,6 +45,8 @@ const (
 	unixConfigPath = "/etc/slalite:."
 	configName     = "slalite"
 )
+
+var cimirepo cimi.Repository
 
 func main() {
 
@@ -73,7 +76,11 @@ func main() {
 		repo, errRepo = memrepository.New(repoconfig)
 	case "mongodb":
 		repo, errRepo = mongodb.New(repoconfig)
+	case "cimi":
+		cimirepo, errRepo = cimi.New(repoconfig)
+		repo = cimirepo
 	}
+
 	if errRepo != nil {
 		log.Fatal("Error creating repository: ", errRepo.Error())
 	}
@@ -134,7 +141,7 @@ func createValidationThread(repo model.IRepository, checkPeriod time.Duration) {
 
 	for {
 		<-ticker.C
-		assessAgreements(repo)
+		assessMf2cAgreements(repo)
 	}
 
 }
@@ -164,5 +171,34 @@ func assessAgreements(repo model.IRepository) {
 
 		result := assessment.AssessAgreement(&a, ma, now)
 		log.Println(fmt.Sprintf("Result: %v", result))
+	}
+}
+
+func assessMf2cAgreements(repo model.IRepository) {
+	log.Println("Running assessment")
+	agreements, err := repo.GetAllAgreements()
+	if err != nil {
+		log.Printf("Error getting agreements: %v\n", err)
+		return
+	}
+
+	now := time.Now()
+	ma := dummyadapter.New()
+
+	r := cimirepo
+
+	for _, a := range agreements {
+		ma.Initialize(&a)
+
+		var result = assessment.AssessAgreement(&a, ma, now)
+		log.Printf("Result: %v\n", result)
+
+		for _, v := range result.GetViolations() {
+			pv := &v
+			pv, err = r.CreateViolation(pv)
+			if err != nil {
+				log.Printf("Error creating violation: %v", err)
+			}
+		}
 	}
 }

@@ -1,0 +1,5 @@
+repository: cimi
+singlefile: true
+
+cimiuser: testuser
+cimiinsecure: false

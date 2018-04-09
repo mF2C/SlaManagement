@@ -41,6 +41,18 @@ type EvaluationGtResult struct {
 // Result is the result of the agreement assessment
 type Result map[string]EvaluationGtResult
 
+// GetViolations return the violations contained in a Result
+func (r *Result) GetViolations() []model.Violation {
+	result := make([]model.Violation, 0, 10)
+
+	for _, gtresult := range *r {
+		for _, v := range gtresult.Violations {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
 // AssessAgreement is the process that assess an agreement. The process is:
 // 1. Check expiration date
 // 2. Evaluate metrics if agreement is started

@@ -8,6 +8,7 @@ RUN go get -d -v github.com/spf13/viper
 RUN go get -d -v gopkg.in/mgo.v2
 RUN go get -d -v github.com/labstack/gommon/log
 RUN go get -d -v github.com/oleksandr/conditions
+RUN go get -d -v github.com/Knetic/govaluate
 
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o SLALite .
@@ -16,8 +17,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o SLALite .
 FROM mvertes/alpine-mongo:latest
 WORKDIR /opt/slalite
 COPY --from=builder /go/src/SLALite/SLALite .
-COPY docker/slalite_mongo.yml /etc/slalite/slalite.yml
-COPY docker/run_slalite_mongo.sh run_slalite.sh
+COPY docker/slalite_cimi.yml /etc/slalite/slalite.yml
+COPY docker/run_slalite_cimi.sh run_slalite.sh
 
 RUN addgroup -S slalite && adduser -D -G slalite slalite
 RUN chown -R slalite:slalite /etc/slalite && chmod 700 /etc/slalite
