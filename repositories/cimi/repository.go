@@ -172,17 +172,17 @@ func login(repo *Repository) error {
 
 	resp, err := repo.client.Post(repo.path("session"), "application/json", bytes.NewBuffer(jsonValue))
 
+	var msg string
+	
 	if err == nil {
+		/* The msg will not be used on Success or not failfast */
+		msg = fmt.Sprintf("%s %s", resp.Status, http.StatusText(resp.StatusCode))
 		defer resp.Body.Close()
+	} else {
+		msg = err.Error()
 	}
 
 	if !repo.failfast && (err != nil || resp.StatusCode == http.StatusBadGateway) {
-		var msg string
-		if err != nil{
-			msg = err.Error()
-		} else {
-			msg = "502 Bad Gateway"
-		}
 		log.Printf("Could not login to CIMI server: %s. Login deferred.", msg)
 		err = nil
 	} else {
@@ -190,7 +190,7 @@ func login(repo *Repository) error {
 		if resp != nil && resp.StatusCode == http.StatusCreated {
 			repo.logged = true
 		} else {
-			err = errors.New(resp.Status)
+			err = errors.New(msg)
 		}
 	}
 	return err
