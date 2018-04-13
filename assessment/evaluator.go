@@ -1,56 +1,44 @@
 /*
-   Copyright 2017 Atos
+Copyright 2017 Atos
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-     http://www.apache.org/licenses/LICENSE-2.0
+  http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 package assessment
 
 import (
+	assessment_model "SLALite/assessment/model"
 	"SLALite/assessment/monitor"
+	"SLALite/assessment/notifier"
 	"SLALite/model"
 	log2 "log"
 	"time"
 
 	"github.com/Knetic/govaluate"
-	"github.com/labstack/gommon/log"
+	log "github.com/labstack/gommon/log"
 )
 
-// ExpressionData represents the set of values needed to evaluate an expression at a single time
-type ExpressionData map[string]monitor.MetricValue
-
-// GuaranteeData represents the list of values needed to evaluate an expression at several points
-// in time
-type GuaranteeData []ExpressionData
-
-// EvaluationGtResult is the result of the evaluation of a guarantee term
-type EvaluationGtResult struct {
-	Metrics    GuaranteeData     // violated metrics
-	Violations []model.Violation // violations occurred as of violated metrics
-}
-
-// Result is the result of the agreement assessment
-type Result map[string]EvaluationGtResult
-
-// GetViolations return the violations contained in a Result
-func (r *Result) GetViolations() []model.Violation {
-	result := make([]model.Violation, 0, 10)
-
-	for _, gtresult := range *r {
-		for _, v := range gtresult.Violations {
-			result = append(result, v)
+//AssessActiveAgreements will get the active agreements from the provided repository and assess them, notifying about violations with the provided notifier.
+func AssessActiveAgreements(repo model.IRepository, ma monitor.MonitoringAdapter, not notifier.ViolationNotifier) {
+	agrements, err := repo.GetActiveAgreements()
+	if err != nil {
+		log.Errorf("Error getting active agreements: " + err.Error())
+	} else {
+		for _, agreement := range agrements {
+			result := AssessAgreement(&agreement, ma, time.Now())
+			repo.UpdateAgreement(&agreement)
+			not.NotifyViolations(&agreement, &result)
 		}
 	}
-	return result
 }
 
 // AssessAgreement is the process that assess an agreement. The process is:
@@ -66,8 +54,8 @@ func (r *Result) GetViolations() []model.Violation {
 // The function results are not persisted. The output must be persisted/handled accordingly.
 // E.g.: agreement and violations must be persisted to DB. Violations must be notified to
 // observers
-func AssessAgreement(a *model.Agreement, ma monitor.MonitoringAdapter, now time.Time) Result {
-	var result Result
+func AssessAgreement(a *model.Agreement, ma monitor.MonitoringAdapter, now time.Time) assessment_model.Result {
+	var result assessment_model.Result
 	var err error
 
 	if a.Details.Expiration.Before(now) {
@@ -93,10 +81,10 @@ func AssessAgreement(a *model.Agreement, ma monitor.MonitoringAdapter, now time.
 // The MonitoringAdapter must feed the process correctly
 // (e.g. if the constraint of a guarantee term is of the type "A>B && C>D", the
 // MonitoringAdapter must supply pairs of values).
-func EvaluateAgreement(a *model.Agreement, ma monitor.MonitoringAdapter) (Result, error) {
+func EvaluateAgreement(a *model.Agreement, ma monitor.MonitoringAdapter) (assessment_model.Result, error) {
 	ma.Initialize(a)
 
-	result := make(Result)
+	result := make(assessment_model.Result)
 	gts := a.Details.Guarantees
 
 	for _, gt := range gts {
@@ -107,7 +95,7 @@ func EvaluateAgreement(a *model.Agreement, ma monitor.MonitoringAdapter) (Result
 		}
 		if len(failed) > 0 {
 			violations := EvaluateGtViolations(a, gt, failed)
-			gtResult := EvaluationGtResult{
+			gtResult := assessment_model.EvaluationGtResult{
 				Metrics:    failed,
 				Violations: violations,
 			}
@@ -122,8 +110,8 @@ func EvaluateAgreement(a *model.Agreement, ma monitor.MonitoringAdapter) (Result
 // (see EvaluateAgreement)
 //
 // Returns the metrics that failed the GT constraint.
-func EvaluateGuarantee(a *model.Agreement, gt model.Guarantee, ma monitor.MonitoringAdapter) (GuaranteeData, error) {
-	failed := make(GuaranteeData, 0, 1)
+func EvaluateGuarantee(a *model.Agreement, gt model.Guarantee, ma monitor.MonitoringAdapter) (assessment_model.GuaranteeData, error) {
+	failed := make(assessment_model.GuaranteeData, 0, 1)
 
 	expression, err := govaluate.NewEvaluableExpression(gt.Constraint)
 	if err != nil {
@@ -144,7 +132,7 @@ func EvaluateGuarantee(a *model.Agreement, gt model.Guarantee, ma monitor.Monito
 }
 
 // EvaluateGtViolations creates violations for the detected violated metrics in EvaluateGuarantee
-func EvaluateGtViolations(a *model.Agreement, gt model.Guarantee, violated GuaranteeData) []model.Violation {
+func EvaluateGtViolations(a *model.Agreement, gt model.Guarantee, violated assessment_model.GuaranteeData) []model.Violation {
 	gtv := make([]model.Violation, 0, len(violated))
 	for _, tuple := range violated {
 		// find newer metric
@@ -169,7 +157,7 @@ func EvaluateGtViolations(a *model.Agreement, gt model.Guarantee, violated Guara
 //
 // The result is: the values if the expression is false (i.e., the failing values) ,
 // or nil if expression was true
-func evaluateExpression(expression *govaluate.EvaluableExpression, values ExpressionData) (ExpressionData, error) {
+func evaluateExpression(expression *govaluate.EvaluableExpression, values assessment_model.ExpressionData) (assessment_model.ExpressionData, error) {
 
 	log2.Printf("Evaluating %v", values)
 	evalues := make(map[string]interface{})

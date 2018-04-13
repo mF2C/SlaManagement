@@ -28,10 +28,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"time"
-	"log"
 
 	"github.com/spf13/viper"
 )
@@ -49,7 +49,7 @@ const (
 	insecureProp    = "cimiinsecure"
 	defaultInsecure = false
 
-	failfastProp = "cimifailfast"
+	failfastProp    = "cimifailfast"
 	defaultFailfast = true
 
 	anonUser string = "anon"
@@ -62,7 +62,7 @@ type Repository struct {
 	username string
 	password string
 	failfast bool
-	logged bool
+	logged   bool
 }
 
 // New creates a Repository according to a configuration, establishing the connection
@@ -129,7 +129,7 @@ func logConfig(config *viper.Viper) {
 		"\tinsecure: %v\n"+
 		"\tfailfast: %v\n",
 		config.GetString(urlProp),
-		config.GetString(userProp), 
+		config.GetString(userProp),
 		config.GetBool(insecureProp),
 		config.GetBool(failfastProp))
 }
@@ -155,7 +155,7 @@ func getClient(url string, insecure bool) (*http.Client, error) {
 	return netClient, err
 }
 
-// login tries to login to CIMI server. 
+// login tries to login to CIMI server.
 // If failfast is false, if server is unavailable or a 502 will return err = nil.
 func login(repo *Repository) error {
 
@@ -173,7 +173,7 @@ func login(repo *Repository) error {
 	resp, err := repo.client.Post(repo.path("session"), "application/json", bytes.NewBuffer(jsonValue))
 
 	var msg string
-	
+
 	if err == nil {
 		/* The msg will not be used on Success or not failfast */
 		msg = fmt.Sprintf("%s %s", resp.Status, http.StatusText(resp.StatusCode))
@@ -232,7 +232,6 @@ func (r Repository) post(resource string, entity interface{}) error {
 			return err
 		}
 	}
-	
 
 	jsonValue, err = json.Marshal(entity)
 	if err != nil {
@@ -319,10 +318,15 @@ func (r Repository) StopAgreement(id string) error {
 	return errors.New("Not implemented")
 }
 
+// UpdateAgreement (see model.Repository)
+func (r Repository) UpdateAgreement(agreement *model.Agreement) (*model.Agreement, error) {
+	return nil, errors.New("Not implemented")
+}
+
 // CreateViolation stores a violation in the CIMI server
 func (r *Repository) CreateViolation(v *model.Violation) (*model.Violation, error) {
 	var acl ACL
-	
+
 	if r.username == anonUser {
 		acl = anonACL
 	} else {
