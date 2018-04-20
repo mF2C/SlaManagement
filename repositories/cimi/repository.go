@@ -42,7 +42,7 @@ const (
 	defaultURL string = "https://localhost:10443/api"
 
 	userProp    = "cimiuser"
-	defaultUser = "testuser"
+	defaultUser = anonUser
 
 	pwdProp    = "cimipwd"
 	defaultPwd = "testpassword"
@@ -59,6 +59,8 @@ const (
 	pathAgreements   = "agreement"
 	pathViolations   = "sla-violation"
 	pathUserProfiles = "user-profile"
+
+	authHeader = "slipstream-authn-info"
 )
 
 // Repository implements the model.Repository interface for a CIMI repository.
@@ -83,6 +85,8 @@ type Repository struct {
 //   on New(); failing should make the program exit.
 //
 // If any of these values is not provided, a default value will be used.
+// For IT-1, the value of the password will be passed as the value of slipstream-authn-info
+// header for requests to CIMI server.
 //
 // It returns the Repository struct and an error. The possible errors:
 // - nil if no error
@@ -218,7 +222,9 @@ func (r Repository) read(resource string, filter string, target interface{}) err
 		url = fmt.Sprintf("%s?$filter=%s", url, filter)
 	}
 	log.Printf("CimiRepository.read() url=%s", url)
-	resp, err := r.client.Get(url)
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set(authHeader, r.password)
+	resp, err := r.client.Do(req)
 
 	if err != nil {
 		return err
@@ -252,7 +258,11 @@ func (r Repository) post(resource string, entity interface{}) error {
 	}
 
 	reader := bytes.NewBuffer(jsonValue)
-	resp, err = r.client.Post(r.path(resource), "application/json", reader)
+
+	req, _ := http.NewRequest("POST", r.path(resource), reader)
+	req.Header.Set("Content-type", "application/json")
+	req.Header.Set(authHeader, r.password)
+	resp, err = r.client.Do(req)
 
 	if err != nil {
 		return err
