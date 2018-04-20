@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
@@ -53,6 +54,11 @@ const (
 	defaultFailfast = true
 
 	anonUser string = "anon"
+
+	pathOperations   = "service-operation-report"
+	pathAgreements   = "agreement"
+	pathViolations   = "sla-violation"
+	pathUserProfiles = "user-profile"
 )
 
 // Repository implements the model.Repository interface for a CIMI repository.
@@ -200,21 +206,28 @@ func (r Repository) path(resource string) string {
 	return r.baseurl + "/" + resource
 }
 
-func (r Repository) read(resource string, target interface{}) error {
+func (r Repository) read(resource string, filter string, target interface{}) error {
 	if !r.logged {
 		err := login(&r)
 		if err != nil {
 			return err
 		}
 	}
-	resp, err := r.client.Get(r.path(resource))
+	url := r.path(resource)
+	if filter != "" {
+		url = fmt.Sprintf("%s?$filter=%s", url, filter)
+	}
+	log.Printf("CimiRepository.read() url=%s", url)
+	resp, err := r.client.Get(url)
 
 	if err != nil {
 		return err
-	} else if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Unexpected status: %v", resp.Status)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("Unexpected status: %v %s", resp.Status, string(body))
+	}
 
 	err = json.NewDecoder(resp.Body).Decode(target)
 
@@ -246,16 +259,17 @@ func (r Repository) post(resource string, entity interface{}) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("Unexpected status: %v", resp.StatusCode)
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("Unexpected status: %v - %s", resp.StatusCode, string(body))
 	}
 	return err
 }
 
 // GetUserProfiles returns all the user profiles
-func (r Repository) GetUserProfiles() ([]userProfile, error) {
+func (r Repository) getUserProfiles() ([]userProfile, error) {
 
 	target := new(userProfileCollection)
-	err := r.read("user-profile", target)
+	err := r.read(pathUserProfiles, "", target)
 
 	return target.UserProfiles, err
 }
@@ -283,14 +297,17 @@ func (r Repository) DeleteProvider(provider *model.Provider) error {
 // GetAllAgreements (see model.Repository)
 func (r Repository) GetAllAgreements() (model.Agreements, error) {
 	target := new(agreementCollection)
-	err := r.read("agreement", target)
+	err := r.read(pathAgreements, "", target)
 
 	return target.Agreements, err
 }
 
 // GetAgreement (see model.Repository)
 func (r Repository) GetAgreement(id string) (*model.Agreement, error) {
-	return nil, errors.New("Not implemented")
+	target := new(model.Agreement)
+	err := r.read(pathAgreements+"/"+id, "", target)
+
+	return target, err
 }
 
 // GetActiveAgreements (see model.Repository)
@@ -325,17 +342,38 @@ func (r Repository) UpdateAgreement(agreement *model.Agreement) (*model.Agreemen
 
 // CreateViolation stores a violation in the CIMI server
 func (r *Repository) CreateViolation(v *model.Violation) (*model.Violation, error) {
-	var acl ACL
+	var acl = r.getACL()
 
-	if r.username == anonUser {
-		acl = anonACL
-	} else {
-		acl = userACL
-	}
 	cimiv := &Violation{
 		*v,
 		acl,
 	}
-	err := r.post("sla-violation", cimiv)
+	err := r.post(pathViolations, cimiv)
 	return v, err
+}
+
+// CreateServiceOperationReport stores an execution log in the CIMI server
+func (r *Repository) CreateServiceOperationReport(e *ServiceOperationReport) (*ServiceOperationReport, error) {
+	var acl = r.getACL()
+
+	e.ACL = acl
+	err := r.post("service-operation-report", e)
+	return e, err
+}
+
+// GetServiceOperationReportsByDate return the execution logs with creation time newer than a date
+func (r *Repository) GetServiceOperationReportsByDate(serviceInstance string, from time.Time) ([]ServiceOperationReport, error) {
+	target := new(serviceOperationReportCollection)
+
+	t := from.UTC().Format(time.RFC3339)
+	err := r.read("service-operation-report",
+		fmt.Sprintf("(serviceInstance/href=\"%s\")and(created>\"%s\")", serviceInstance, t), target)
+	return target.ServiceOperationReports, err
+}
+
+func (r *Repository) getACL() ACL {
+	if r.username == anonUser {
+		return anonACL
+	}
+	return userACL
 }

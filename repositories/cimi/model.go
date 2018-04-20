@@ -18,7 +18,13 @@ package cimi
 
 import (
 	"SLALite/model"
+	"time"
 )
+
+// Href is the entity that represents a resource link to other entity
+type Href struct {
+	Href string `json:"href"`
+}
 
 type userProfileCollection struct {
 	Count        int           `json:"count"`
@@ -39,6 +45,22 @@ type agreementCollection struct {
 type Violation struct {
 	model.Violation
 	ACL ACL `json:"acl"`
+}
+
+// ServiceOperationReport represents the execution time of a service operation in DER
+type ServiceOperationReport struct {
+	Id              string    `json:"id"`
+	ServiceInstance Href      `json:"serviceInstance"`
+	Operation       string    `json:"operation"`
+	Created         time.Time `json:"created"`
+	Updated         time.Time `json:"updated"`
+	ExecutionTime   float64   `json:"execution_time"`
+	ACL             ACL       `json:"acl"`
+}
+
+type serviceOperationReportCollection struct {
+	Count                   int                      `json:"count"`
+	ServiceOperationReports []ServiceOperationReport `json:"serviceOperationReports"`
 }
 
 // ACL is the ACL field of any CIMI entity
