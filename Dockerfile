@@ -11,7 +11,7 @@ RUN go get -d -v ./...
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o SLALite .
 
 ###
-FROM mvertes/alpine-mongo:latest
+FROM alpine:3.6
 WORKDIR /opt/slalite
 COPY --from=builder /go/src/SLALite/SLALite .
 COPY docker/slalite_cimi.yml /etc/slalite/slalite.yml

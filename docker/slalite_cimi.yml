@@ -1,5 +1,9 @@
 repository: cimi
 singlefile: true
 
-cimiuser: testuser
-cimiinsecure: false
+cimiuser: anon
+cimipwd: super ADMIN
+cimiinsecure: true
+cimiurl: https://proxy:443
+
+port: 46030
