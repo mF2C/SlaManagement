@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -36,6 +37,8 @@ import (
 
 	"github.com/spf13/viper"
 )
+
+type method string
 
 const (
 	urlProp           = "cimiurl"
@@ -61,6 +64,10 @@ const (
 	pathUserProfiles = "user-profile"
 
 	authHeader = "slipstream-authn-info"
+
+	POST = "POST"
+	GET  = "GET"
+	PUT  = "PUT"
 )
 
 // Repository implements the model.Repository interface for a CIMI repository.
@@ -210,6 +217,44 @@ func (r Repository) path(resource string) string {
 	return r.baseurl + "/" + resource
 }
 
+func (r Repository) request(method method, url string, content interface{}, target interface{}) error {
+
+	var err error
+	var resp *http.Response
+	var jsonValue []byte
+	var reader io.Reader
+
+	if content != nil {
+		jsonValue, err = json.Marshal(content)
+		if err != nil {
+			return err
+		}
+		reader = bytes.NewBuffer(jsonValue)
+	}
+
+	req, _ := http.NewRequest(string(method), url, reader)
+	req.Header.Set(authHeader, r.password)
+	if reader != nil {
+		req.Header.Set("Content-type", "application/json")
+	}
+	resp, err = r.client.Do(req)
+
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("Unexpected status: %v %s", resp.Status, string(body))
+	}
+
+	if target != nil {
+		err = json.NewDecoder(resp.Body).Decode(target)
+	}
+
+	return err
+}
+
 func (r Repository) read(resource string, filter string, target interface{}) error {
 	if !r.logged {
 		err := login(&r)
@@ -217,33 +262,19 @@ func (r Repository) read(resource string, filter string, target interface{}) err
 			return err
 		}
 	}
+
 	url := r.path(resource)
 	if filter != "" {
 		url = fmt.Sprintf("%s?$filter=%s", url, filter)
 	}
 	log.Printf("CimiRepository.read() url=%s", url)
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Set(authHeader, r.password)
-	resp, err := r.client.Do(req)
 
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("Unexpected status: %v %s", resp.Status, string(body))
-	}
-
-	err = json.NewDecoder(resp.Body).Decode(target)
+	err := r.request(GET, url, nil, target)
 
 	return err
 }
 
 func (r Repository) post(resource string, entity interface{}) error {
-	var err error
-	var resp *http.Response
-	var jsonValue []byte
 
 	if !r.logged {
 		err := login(&r)
@@ -252,26 +283,26 @@ func (r Repository) post(resource string, entity interface{}) error {
 		}
 	}
 
-	jsonValue, err = json.Marshal(entity)
-	if err != nil {
-		return err
+	url := r.path(resource)
+
+	err := r.request(POST, url, entity, nil)
+
+	return err
+}
+
+func (r Repository) put(resource string, entity interface{}) error {
+
+	if !r.logged {
+		err := login(&r)
+		if err != nil {
+			return err
+		}
 	}
 
-	reader := bytes.NewBuffer(jsonValue)
+	url := r.path(resource)
 
-	req, _ := http.NewRequest("POST", r.path(resource), reader)
-	req.Header.Set("Content-type", "application/json")
-	req.Header.Set(authHeader, r.password)
-	resp, err = r.client.Do(req)
+	err := r.request(PUT, url, entity, nil)
 
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusCreated {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("Unexpected status: %v - %s", resp.StatusCode, string(body))
-	}
 	return err
 }
 
@@ -337,21 +368,56 @@ func (r Repository) DeleteAgreement(agreement *model.Agreement) error {
 
 // StartAgreement (see model.Repository)
 func (r Repository) StartAgreement(id string) error {
-	return errors.New("Not implemented")
+	a, err := r.GetAgreement(id)
+	if err != nil {
+		return err
+	}
+	a.State = model.STARTED
+	var acl = r.getACL()
+
+	cimia := &Agreement{
+		*a,
+		acl,
+	}
+
+	err = r.put(pathAgreements+"/"+id, cimia)
+	return err
 }
 
 // StopAgreement (see model.Repository)
 func (r Repository) StopAgreement(id string) error {
-	return errors.New("Not implemented")
+	a, err := r.GetAgreement(id)
+	if err != nil {
+		return err
+	}
+
+	a.State = model.STOPPED
+	var acl = r.getACL()
+
+	cimia := &Agreement{
+		*a,
+		acl,
+	}
+
+	err = r.put(pathAgreements+"/"+id, cimia)
+	return err
 }
 
 // UpdateAgreement (see model.Repository)
 func (r Repository) UpdateAgreement(agreement *model.Agreement) (*model.Agreement, error) {
-	return nil, errors.New("Not implemented")
+	var acl = r.getACL()
+
+	cimia := &Agreement{
+		*agreement,
+		acl,
+	}
+
+	err := r.put(pathAgreements+"/"+agreement.Id, cimia)
+	return agreement, err
 }
 
 // CreateViolation stores a violation in the CIMI server
-func (r *Repository) CreateViolation(v *model.Violation) (*model.Violation, error) {
+func (r Repository) CreateViolation(v *model.Violation) (*model.Violation, error) {
 	var acl = r.getACL()
 
 	cimiv := &Violation{
@@ -372,7 +438,7 @@ func (r *Repository) CreateServiceOperationReport(e *ServiceOperationReport) (*S
 }
 
 // GetServiceOperationReportsByDate return the execution logs with creation time newer than a date
-func (r *Repository) GetServiceOperationReportsByDate(serviceInstance string, from time.Time) ([]ServiceOperationReport, error) {
+func (r Repository) GetServiceOperationReportsByDate(serviceInstance string, from time.Time) ([]ServiceOperationReport, error) {
 	target := new(serviceOperationReportCollection)
 
 	t := from.UTC().Format(time.RFC3339)

@@ -60,8 +60,13 @@ func New(repo AdapterRepository) monitor.MonitoringAdapter {
 }
 
 func (ma *adapter) Initialize(a *model.Agreement) {
-
-	reports, err := ma.repository.GetServiceOperationReportsByDate(a.Id, a.Assessment.LastExecution)
+	var from time.Time
+	if a.Assessment == nil {
+		from = a.Details.Creation
+	} else {
+		from = a.Assessment.LastExecution
+	}
+	reports, err := ma.repository.GetServiceOperationReportsByDate(a.Id, from)
 	if err != nil {
 		log.Printf("Error initializing adapter: %v", err)
 		return

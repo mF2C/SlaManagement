@@ -17,8 +17,8 @@ package main
 
 import (
 	"SLALite/assessment"
-	"SLALite/assessment/monitor/dummyadapter"
 	"SLALite/assessment/monitor"
+	"SLALite/assessment/monitor/cimiadapter"
 	"SLALite/assessment/notifier"
 	"SLALite/model"
 	"SLALite/repositories/cimi"
@@ -50,7 +50,7 @@ func main() {
 	logMainConfig(config)
 
 	singlefile := config.GetBool(utils.SingleFilePropertyName)
-	//checkPeriod := config.GetDuration(checkPeriodPropertyName)
+	checkPeriod := config.GetDuration(utils.CheckPeriodPropertyName)
 	repoType := config.GetString(utils.RepositoryTypePropertyName)
 
 	var repoconfig *viper.Viper
@@ -77,7 +77,7 @@ func main() {
 	repo, _ = validation.New(repo)
 	if repo != nil {
 		a, _ := NewApp(config, repo)
-		//go createValidationThread(repo, checkPeriod)
+		go createValidationThread(repo, nil, nil, checkPeriod)
 		a.Run()
 	}
 }
@@ -146,32 +146,8 @@ func validateProviders(repo model.IRepository) {
 		log.Println("Error: " + err.Error())
 	}
 }
+
 func assessMf2cAgreements(repo model.IRepository) {
-	log.Println("Running assessment")
-	agreements, err := repo.GetAllAgreements()
-	if err != nil {
-		log.Printf("Error getting agreements: %v\n", err)
-		return
-	}
-
-	now := time.Now()
-	ma := dummyadapter.New()
-
-	r := cimirepo
-
-	for _, a := range agreements {
-		ma.Initialize(&a)
-
-		var result = assessment.AssessAgreement(&a, ma, now)
-		log.Printf("Result: %v\n", result)
-
-		for _, v := range result.GetViolations() {
-			pv := &v
-			pv, err = r.CreateViolation(pv)
-			if err != nil {
-				log.Printf("Error creating violation: %v", err)
-			}
-		}
-	}
+	ma := cimiadapter.New(cimirepo)
+	assessment.AssessMf2cAgreements(repo, cimirepo, ma)
 }
-

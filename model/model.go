@@ -134,19 +134,19 @@ func (c *Client) Validate() []error {
 // The Assessment cannot be modified externally.
 // The Signature is the Text digitally signed by the Client (not used yet)
 type Agreement struct {
-	Id         string     `json:"id" bson:"_id"`
-	Name       string     `json:"name"`
-	State      State      `json:"state"`
-	Assessment Assessment `json:"assessment"`
-	Details    Details    `json:"details"`
+	Id         string      `json:"id" bson:"_id"`
+	Name       string      `json:"name"`
+	State      State       `json:"state"`
+	Assessment *Assessment `json:"assessment,omitempty"`
+	Details    Details     `json:"details"`
 
 	/* Signature string `json:"signature"` */
 }
 
 // Assessment is the struct that provides assessment information
 type Assessment struct {
-	FirstExecution time.Time `json:"first_execution"`
-	LastExecution  time.Time `json:"last_execution"`
+	FirstExecution time.Time `json:"first_execution,omitempty"`
+	LastExecution  time.Time `json:"last_execution,omitempty"`
 }
 
 // Details is the struct that represents the "contract" signed by the client
@@ -165,8 +165,8 @@ type Details struct {
 type Guarantee struct {
 	Name       string       `json:"name"`
 	Constraint string       `json:"constraint"`
-	Warning    string       `json:"warning"`
-	Penalties  []PenaltyDef `json:"penalties"`
+	Warning    string       `json:"warning,omitempty"`
+	Penalties  []PenaltyDef `json:"penalties,omitempty"`
 }
 
 // PenaltyDef is the struct that represents a penalty in case of an SLO violation

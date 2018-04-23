@@ -21,6 +21,11 @@ import (
 	"time"
 )
 
+// IRepository expose the interface to be fulfilled by implementations of CIMI repositories.
+type IRepository interface {
+	CreateViolation(v *model.Violation) (*model.Violation, error)
+}
+
 // Href is the entity that represents a resource link to other entity
 type Href struct {
 	Href string `json:"href"`
@@ -39,6 +44,12 @@ type userProfile struct {
 type agreementCollection struct {
 	Count      int               `json:"count"`
 	Agreements []model.Agreement `json:"agreements"`
+}
+
+// Agreement is the repr. of a CIMI agreement
+type Agreement struct {
+	model.Agreement
+	ACL ACL `json:"acl"`
 }
 
 // Violation is the repr. of a CIMI violation
