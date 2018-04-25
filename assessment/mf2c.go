@@ -55,6 +55,9 @@ func AssessMf2cAgreements(repo model.IRepository, mf2cRepo cimi.IRepository, ma 
 				log.Printf("Error creating violation: %v", err)
 			}
 		}
-		repo.UpdateAgreement(&a)
+		_, err = repo.UpdateAgreement(&a)
+		if err != nil {
+			log.Printf("Error updating agreement: %v", err)
+		}
 	}
 }
