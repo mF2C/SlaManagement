@@ -33,11 +33,6 @@ type mf2cTestRepo struct {
 	*memrepository.MemRepository
 }
 
-func (r mf2cTestRepo) CreateViolation(v *model.Violation) (*model.Violation, error) {
-	fmt.Printf("Creating violation: %v\n", v)
-	return v, nil
-}
-
 func (r mf2cTestRepo) GetServiceOperationReportsByDate(
 	serviceInstance string, from time.Time) ([]cimi.ServiceOperationReport, error) {
 

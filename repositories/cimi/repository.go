@@ -33,6 +33,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/cookiejar"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -65,9 +66,10 @@ const (
 
 	authHeader = "slipstream-authn-info"
 
-	POST = "POST"
-	GET  = "GET"
-	PUT  = "PUT"
+	POST   = "POST"
+	GET    = "GET"
+	PUT    = "PUT"
+	DELETE = "DELETE"
 )
 
 // Repository implements the model.Repository interface for a CIMI repository.
@@ -217,6 +219,15 @@ func (r Repository) path(resource string) string {
 	return r.baseurl + "/" + resource
 }
 
+func (r Repository) subpath(resource, id string) string {
+	if id == "" {
+		return resource
+	}
+	parts := strings.Split(id, "/")
+	// just return the last element
+	return resource + "/" + parts[len(parts)-1]
+}
+
 func (r Repository) request(method method, url string, content interface{}, target interface{}) error {
 
 	var err error
@@ -255,7 +266,7 @@ func (r Repository) request(method method, url string, content interface{}, targ
 	return err
 }
 
-func (r Repository) read(resource string, filter string, target interface{}) error {
+func (r Repository) get(resource string, filter string, target interface{}) error {
 	if !r.logged {
 		err := login(&r)
 		if err != nil {
@@ -306,11 +317,27 @@ func (r Repository) put(resource string, entity interface{}) error {
 	return err
 }
 
+func (r Repository) delete(resource string) error {
+
+	if !r.logged {
+		err := login(&r)
+		if err != nil {
+			return err
+		}
+	}
+
+	url := r.path(resource)
+
+	err := r.request(DELETE, url, nil, nil)
+
+	return err
+}
+
 // GetUserProfiles returns all the user profiles
 func (r Repository) getUserProfiles() ([]userProfile, error) {
 
 	target := new(userProfileCollection)
-	err := r.read(pathUserProfiles, "", target)
+	err := r.get(pathUserProfiles, "", target)
 
 	return target.UserProfiles, err
 }
@@ -338,7 +365,7 @@ func (r Repository) DeleteProvider(provider *model.Provider) error {
 // GetAllAgreements (see model.Repository)
 func (r Repository) GetAllAgreements() (model.Agreements, error) {
 	target := new(agreementCollection)
-	err := r.read(pathAgreements, "", target)
+	err := r.get(pathAgreements, "", target)
 
 	return target.Agreements, err
 }
@@ -346,7 +373,8 @@ func (r Repository) GetAllAgreements() (model.Agreements, error) {
 // GetAgreement (see model.Repository)
 func (r Repository) GetAgreement(id string) (*model.Agreement, error) {
 	target := new(model.Agreement)
-	err := r.read(pathAgreements+"/"+id, "", target)
+	subpath := r.subpath(pathAgreements, id)
+	err := r.get(subpath, "", target)
 
 	return target, err
 }
@@ -363,12 +391,16 @@ func (r Repository) CreateAgreement(agreement *model.Agreement) (*model.Agreemen
 
 // DeleteAgreement (see model.Repository)
 func (r Repository) DeleteAgreement(agreement *model.Agreement) error {
-	return errors.New("Not implemented")
+	subpath := r.subpath(pathAgreements, agreement.Id)
+	err := r.delete(subpath)
+
+	return err
 }
 
 // StartAgreement (see model.Repository)
 func (r Repository) StartAgreement(id string) error {
-	a, err := r.GetAgreement(id)
+	subpath := r.subpath(pathAgreements, id)
+	a, err := r.GetAgreement(subpath)
 	if err != nil {
 		return err
 	}
@@ -380,13 +412,14 @@ func (r Repository) StartAgreement(id string) error {
 		acl,
 	}
 
-	err = r.put(pathAgreements+"/"+id, cimia)
+	err = r.put(subpath, cimia)
 	return err
 }
 
 // StopAgreement (see model.Repository)
 func (r Repository) StopAgreement(id string) error {
-	a, err := r.GetAgreement(id)
+	subpath := r.subpath(pathAgreements, id)
+	a, err := r.GetAgreement(subpath)
 	if err != nil {
 		return err
 	}
@@ -399,7 +432,7 @@ func (r Repository) StopAgreement(id string) error {
 		acl,
 	}
 
-	err = r.put(pathAgreements+"/"+id, cimia)
+	err = r.put(subpath, cimia)
 	return err
 }
 
@@ -412,7 +445,8 @@ func (r Repository) UpdateAgreement(agreement *model.Agreement) (*model.Agreemen
 		acl,
 	}
 
-	err := r.put(pathAgreements+"/"+agreement.Id, cimia)
+	subpath := r.subpath(pathAgreements, agreement.Id)
+	err := r.put(subpath, cimia)
 	return agreement, err
 }
 
@@ -428,12 +462,21 @@ func (r Repository) CreateViolation(v *model.Violation) (*model.Violation, error
 	return v, err
 }
 
+// GetViolation gets a violation from the CIMI server by its ID
+func (r Repository) GetViolation(id string) (*model.Violation, error) {
+	target := new(model.Violation)
+	subpath := r.subpath(pathViolations, id)
+	err := r.get(subpath, "", target)
+
+	return target, err
+}
+
 // CreateServiceOperationReport stores an execution log in the CIMI server
 func (r *Repository) CreateServiceOperationReport(e *ServiceOperationReport) (*ServiceOperationReport, error) {
 	var acl = r.getACL()
 
 	e.ACL = acl
-	err := r.post("service-operation-report", e)
+	err := r.post(pathOperations, e)
 	return e, err
 }
 
@@ -442,14 +485,14 @@ func (r Repository) GetServiceOperationReportsByDate(serviceInstance string, fro
 	target := new(serviceOperationReportCollection)
 
 	t := from.UTC().Format(time.RFC3339)
-	err := r.read("service-operation-report",
+	err := r.get(pathOperations,
 		fmt.Sprintf("(serviceInstance/href=\"%s\")and(created>\"%s\")", serviceInstance, t), target)
 	return target.ServiceOperationReports, err
 }
 
 func (r *Repository) getACL() ACL {
 	if r.username == anonUser {
-		return anonACL
+		return userACL
 	}
 	return userACL
 }
