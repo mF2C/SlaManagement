@@ -45,6 +45,7 @@ type adapter struct {
 // the needed info for assessment
 type AdapterRepository interface {
 	GetServiceOperationReportsByDate(serviceInstance string, from time.Time) ([]cimi.ServiceOperationReport, error)
+	GetServiceInstancesByAgreement(aID string) ([]cimi.ServiceInstance, error)
 }
 
 // New returns a CIMI monitoring adapter
@@ -66,11 +67,21 @@ func (ma *adapter) Initialize(a *model.Agreement) {
 	} else {
 		from = a.Assessment.LastExecution
 	}
-	reports, err := ma.repository.GetServiceOperationReportsByDate(a.Id, from)
+	sis, err := ma.repository.GetServiceInstancesByAgreement(a.Id)
+	reports := make([]cimi.ServiceOperationReport, 0, 5)
+	for _, si := range sis {
+		siReports, err := ma.repository.GetServiceOperationReportsByDate(si.Id, from)
+		if err != nil {
+			log.Printf("Error initializing adapter: %v", err)
+			return
+		}
+		reports = append(reports, siReports...)
+	}
 	if err != nil {
 		log.Printf("Error initializing adapter: %v", err)
 		return
 	}
+	log.Printf("cimiadapter.Initialize(): reports=%#v", reports)
 
 	ma.agreement = a
 	ma.metrics = make(map[operationName][]monitor.MetricValue)

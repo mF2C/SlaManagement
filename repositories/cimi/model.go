@@ -54,8 +54,11 @@ type Agreement struct {
 
 // Violation is the repr. of a CIMI violation
 type Violation struct {
-	model.Violation
-	ACL ACL `json:"acl"`
+	Id          string    `json:"id"`
+	AgreementId Href      `json:"agreement_id"`
+	Guarantee   string    `json:"guarantee"`
+	Datetime    time.Time `json:"datetime"`
+	ACL         ACL       `json:"acl"`
 }
 
 // ServiceOperationReport represents the execution time of a service operation in DER
@@ -72,6 +75,24 @@ type ServiceOperationReport struct {
 type serviceOperationReportCollection struct {
 	Count                   int                      `json:"count"`
 	ServiceOperationReports []ServiceOperationReport `json:"serviceOperationReports"`
+}
+
+// ServiceInstance is the entity that represents the execution of a service
+type ServiceInstance struct {
+	Id        string      `json:"id"`
+	ACL       ACL         `json:"acl"`
+	User      string      `json:"user"`
+	Service   string      `json:"service"`
+	Agreement string      `json:"agreement"`
+	Status    string      `json:"status"`
+	Created   time.Time   `json:"created"`
+	Updated   time.Time   `json:"updated"`
+	Agents    interface{} `json:"agents"`
+}
+
+type serviceInstanceCollection struct {
+	Count            int               `json:"count"`
+	ServiceInstances []ServiceInstance `json:"serviceInstances"`
 }
 
 // ACL is the ACL field of any CIMI entity

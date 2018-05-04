@@ -59,10 +59,11 @@ const (
 
 	anonUser string = "anon"
 
-	pathOperations   = "service-operation-report"
-	pathAgreements   = "agreement"
-	pathViolations   = "sla-violation"
-	pathUserProfiles = "user-profile"
+	pathOperations       = "service-operation-report"
+	pathAgreements       = "agreement"
+	pathViolations       = "sla-violation"
+	pathUserProfiles     = "user-profile"
+	pathServiceInstances = "service-instance"
 
 	authHeader = "slipstream-authn-info"
 
@@ -455,8 +456,10 @@ func (r Repository) CreateViolation(v *model.Violation) (*model.Violation, error
 	var acl = r.getACL()
 
 	cimiv := &Violation{
-		*v,
-		acl,
+		AgreementId: Href{v.AgreementId},
+		Datetime:    v.Datetime,
+		Guarantee:   v.Guarantee,
+		ACL:         acl,
 	}
 	err := r.post(pathViolations, cimiv)
 	return v, err
@@ -490,9 +493,32 @@ func (r Repository) GetServiceOperationReportsByDate(serviceInstance string, fro
 	return target.ServiceOperationReports, err
 }
 
+// GetServiceInstancesByAgreement returns the ServiceInstances with a given agreement id.
+func (r Repository) GetServiceInstancesByAgreement(aID string) ([]ServiceInstance, error) {
+	target := new(serviceInstanceCollection)
+
+	filter := fmt.Sprintf("agreement=\"%s\"", aID)
+	err := r.get(pathServiceInstances, filter, target)
+	return target.ServiceInstances, err
+}
+
 func (r *Repository) getACL() ACL {
 	if r.username == anonUser {
 		return userACL
 	}
 	return userACL
+}
+
+func (r Repository) getServiceInstance(siID string) (*ServiceInstance, error) {
+	target := new(ServiceInstance)
+
+	subpath := r.subpath(pathServiceInstances, siID)
+	err := r.get(subpath, "", target)
+	return target, err
+}
+
+func (r Repository) updateServiceInstance(si *ServiceInstance) (*ServiceInstance, error) {
+	subpath := r.subpath(pathServiceInstances, si.Id)
+	err := r.put(subpath, si)
+	return si, err
 }
