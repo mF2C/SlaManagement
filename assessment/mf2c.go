@@ -30,8 +30,8 @@ This file contains the mF2C asssessment code
 
 // AssessMf2cAgreements is the main process for the mf2c assessment
 func AssessMf2cAgreements(repo model.IRepository, mf2cRepo cimi.IRepository, ma monitor.MonitoringAdapter) {
-	log.Println("Running assessment")
 	agreements, err := repo.GetAllAgreements()
+	log.Printf("Running assessment. Processing %d agreement(s)", len(agreements))
 	if err != nil {
 		log.Printf("Error getting agreements: %v\n", err)
 		return
@@ -40,7 +40,7 @@ func AssessMf2cAgreements(repo model.IRepository, mf2cRepo cimi.IRepository, ma 
 	now := time.Now()
 
 	for _, a := range agreements {
-		ma.Initialize(&a)
+		log.Printf("Evaluating agreement %s", a.Id)
 		if a.State == model.STARTED && a.Assessment == nil {
 			a.Assessment = new(model.Assessment)
 		}

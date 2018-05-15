@@ -220,13 +220,17 @@ func (r Repository) path(resource string) string {
 	return r.baseurl + "/" + resource
 }
 
+func (r Repository) stripID(id string) string {
+	parts := strings.Split(id, "/")
+	// just return the last element
+	return parts[len(parts)-1]
+}
+
 func (r Repository) subpath(resource, id string) string {
 	if id == "" {
 		return resource
 	}
-	parts := strings.Split(id, "/")
-	// just return the last element
-	return resource + "/" + parts[len(parts)-1]
+	return resource + "/" + r.stripID(id)
 }
 
 func (r Repository) request(method method, url string, content interface{}, target interface{}) error {
