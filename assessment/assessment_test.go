@@ -337,6 +337,7 @@ func createAgreementFull(aid string, provider model.Provider, client model.Clien
 			Expiration: time.Now().Add(24 * time.Hour),
 			Guarantees: make([]model.Guarantee, len(constraints)),
 		},
+		Assessment: &model.Assessment{},
 	}
 
 	var i = 0

@@ -40,6 +40,11 @@ func (r mf2cTestRepo) GetServiceOperationReportsByDate(
 	return nil, nil
 }
 
+func (r mf2cTestRepo) GetServiceInstancesByAgreement(aID string) ([]cimi.ServiceInstance, error) {
+	fmt.Println("GetServiceInstancesByAgreement")
+	return nil, nil
+}
+
 func TestStartedAgreement(t *testing.T) {
 	var memRepo, _ = memrepository.New(nil)
 	var mf2cRepo = mf2cTestRepo{&memRepo}

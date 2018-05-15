@@ -100,7 +100,7 @@ func TestAgreement(t *testing.T) {
 		Id:         "id",
 		Name:       "name",
 		State:      STOPPED,
-		Assessment: Assessment{},
+		Assessment: &Assessment{},
 		Details: Details{
 			Id:       "id",
 			Name:     "name",
