@@ -37,6 +37,10 @@ import (
 
 var cimirepo cimi.Repository
 
+// version and date are defined on compilation (see makefile)
+var version string
+var date string
+
 func main() {
 
 	// TODO: Add windows path
@@ -45,7 +49,7 @@ func main() {
 	configFile := flag.String("f", "", "Path of configuration file. Overrides -b and -d")
 	flag.Parse()
 
-	log.Println("Initializing")
+	log.Printf("Running SLALite %s compiled on %s", version, date)
 	config := createMainConfig(configFile, configPath, configBasename)
 	logMainConfig(config)
 
