@@ -3,7 +3,7 @@ OUT := SLALite
 # Package name
 PKG := SLALite
 # e.g. mf2c/sla-management
-IMAGE := slalite
+IMAGE := mf2c/sla-management
 # Version identifier for HEAD
 VERSION := $(shell git describe --always --dirty)
 DATE := $(shell date -u +%Y-%m-%dT%H:%M:%S)
