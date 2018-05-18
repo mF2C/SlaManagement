@@ -463,6 +463,8 @@ func (r Repository) CreateViolation(v *model.Violation) (*model.Violation, error
 		AgreementId: Href{v.AgreementId},
 		Datetime:    v.Datetime,
 		Guarantee:   v.Guarantee,
+		Constraint:  v.Constraint,
+		Values:      v.Values,
 		ACL:         acl,
 	}
 	err := r.post(pathViolations, cimiv)

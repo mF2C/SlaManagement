@@ -54,11 +54,13 @@ type Agreement struct {
 
 // Violation is the repr. of a CIMI violation
 type Violation struct {
-	Id          string    `json:"id"`
-	AgreementId Href      `json:"agreement_id"`
-	Guarantee   string    `json:"guarantee"`
-	Datetime    time.Time `json:"datetime"`
-	ACL         ACL       `json:"acl"`
+	Id          string                 `json:"id"`
+	AgreementId Href                   `json:"agreement_id"`
+	Guarantee   string                 `json:"guarantee"`
+	Datetime    time.Time              `json:"datetime"`
+	Constraint  string                 `json:"constraint"`
+	Values      map[string]interface{} `json:"values"`
+	ACL         ACL                    `json:"acl"`
 }
 
 // ServiceOperationReport represents the execution time of a service operation in DER
