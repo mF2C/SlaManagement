@@ -24,7 +24,7 @@ RUN addgroup -S slalite && adduser -D -G slalite slalite
 RUN chown -R slalite:slalite /etc/slalite && chmod 700 /etc/slalite
 
 EXPOSE 8090
-#ENTRYPOINT ["./run_slalite.sh"]
 USER slalite
-ENTRYPOINT ["/opt/slalite/SLALite"]
+ENTRYPOINT ["/opt/slalite/run_slalite.sh"]
+#ENTRYPOINT ["/opt/slalite/SLALite"]
 
