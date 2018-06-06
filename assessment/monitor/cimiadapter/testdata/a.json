@@ -18,6 +18,10 @@
             {
                 "name": "dijkstra",
                 "constraint": "execution_time < 100"
+            },
+            {
+                "name": "*",
+                "constraint": "execution_time < 100"
             }
         ]
     }

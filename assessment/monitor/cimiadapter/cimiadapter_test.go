@@ -2,12 +2,17 @@ package cimiadapter
 
 import (
 	"SLALite/assessment"
+	amodel "SLALite/assessment/model"
 	"SLALite/model"
 	"SLALite/repositories/cimi"
 	"encoding/json"
 	"os"
 	"testing"
 	"time"
+)
+
+const (
+	dijkstra = "dijkstra"
 )
 
 var tl = Timeline{
@@ -21,7 +26,7 @@ type repository struct {
 
 func (r repository) GetServiceOperationReportsByDate(serviceInstance string, from time.Time) ([]cimi.ServiceOperationReport, error) {
 	result := make([]cimi.ServiceOperationReport, 0, 1)
-	for _, log := range(r.values) {
+	for _, log := range r.values {
 		if log.ServiceInstance.Href == serviceInstance {
 			result = append(result, log)
 		}
@@ -54,12 +59,20 @@ func TestEvaluate(t *testing.T) {
 	adapter := New(r)
 
 	_, err = assessment.EvaluateAgreement(&a, adapter)
+	var res amodel.Result
 	if err == nil {
 		a.Assessment = new(model.Assessment)
-		_, err = assessment.EvaluateAgreement(&a, adapter)
+		res, err = assessment.EvaluateAgreement(&a, adapter)
 	}
 	if err != nil {
 		t.Errorf("Error evaluating agreement: %v", err)
+	}
+	// Check there one violation per GT
+	if nDijkstra := len(res[dijkstra].Violations); nDijkstra != 1 {
+		t.Errorf("Unexpected number of dijkstra violations. Expected: %d. Actual: %d", 1, nDijkstra)
+	}
+	if nAll := len(res[string(catchAllName)].Violations); nAll != 1 {
+		t.Errorf("Unexpected number of * violations. Expected: %d. Actual: %d", 1, nAll)
 	}
 }
 
@@ -97,7 +110,7 @@ func initVars() (model.Agreement, repository, error) {
 	if err != nil {
 		return a, r, err
 	}
-	op := "dijkstra"
+	op := dijkstra
 	si1 := "service-instance1"
 	si2 := "service-instance2"
 	r = repository{

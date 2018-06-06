@@ -30,6 +30,9 @@ import (
 const (
 	// ExecTimeName Name of execution time metric on mF2C
 	ExecTimeName = "execution_time"
+
+	// catchAllName is the name of the CatchAll guarantee term (i.e., term that applies to operations)
+	catchAllName = operationName("*")
 )
 
 type operationName string
@@ -99,6 +102,15 @@ func (ma *adapter) Initialize(a *model.Agreement) {
 			ma.i[op] = 0
 		}
 		ma.metrics[op] = append(ma.metrics[op], mv)
+
+		//
+		// Manage catchall term
+		//
+		if _, ok := ma.metrics[catchAllName]; !ok {
+			ma.metrics[catchAllName] = make([]monitor.MetricValue, 0)
+			ma.i[catchAllName] = 0
+		}
+		ma.metrics[catchAllName] = append(ma.metrics[catchAllName], mv)
 	}
 }
 
