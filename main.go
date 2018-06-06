@@ -27,10 +27,11 @@ import (
 	"SLALite/repositories/validation"
 	"SLALite/utils"
 	"flag"
-	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
@@ -49,7 +50,7 @@ func main() {
 	configFile := flag.String("f", "", "Path of configuration file. Overrides -b and -d")
 	flag.Parse()
 
-	log.Printf("Running SLALite %s compiled on %s", version, date)
+	log.Infof("Running SLALite %s compiled on %s", version, date)
 	config := createMainConfig(configFile, configPath, configBasename)
 	logMainConfig(config)
 
@@ -122,7 +123,7 @@ func logMainConfig(config *viper.Viper) {
 	checkPeriod := config.GetDuration(utils.CheckPeriodPropertyName)
 	repoType := config.GetString(utils.RepositoryTypePropertyName)
 
-	log.Printf("SLALite initialization\n"+
+	log.Infof("SLALite initialization\n"+
 		"\tConfigfile: %s\n"+
 		"\tRepository type: %s\n"+
 		"\tCheck period:%d\n",
