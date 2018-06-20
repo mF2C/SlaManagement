@@ -4,6 +4,6 @@ singlefile: true
 cimiuser: anon
 cimipwd: super ADMIN
 cimiinsecure: true
-cimiurl: https://proxy:443
+cimiurl: https://proxy:443/api
 
 port: 46030
