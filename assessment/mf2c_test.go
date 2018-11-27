@@ -49,6 +49,8 @@ func TestStartedAgreement(t *testing.T) {
 	var memRepo, _ = memrepository.New(nil)
 	var mf2cRepo = mf2cTestRepo{&memRepo}
 
+	expiration := time.Now().Add(24 * time.Hour)
+
 	a := model.Agreement{
 		Id:    "id",
 		Name:  "name",
@@ -59,7 +61,7 @@ func TestStartedAgreement(t *testing.T) {
 			Type:     model.AGREEMENT,
 			Provider: provider, Client: client,
 			Creation:   time.Now(),
-			Expiration: time.Now().Add(24 * time.Hour),
+			Expiration: &expiration,
 			Guarantees: []model.Guarantee{
 				model.Guarantee{Name: "TestGuarantee", Constraint: "test_value > 10"},
 			},
@@ -86,6 +88,8 @@ func TestStoppedAgreement(t *testing.T) {
 	var memRepo, _ = memrepository.New(nil)
 	var mf2cRepo = mf2cTestRepo{&memRepo}
 
+	expiration := time.Now().Add(24 * time.Hour)
+	
 	a := model.Agreement{
 		Id:    "id",
 		Name:  "name",
@@ -96,7 +100,7 @@ func TestStoppedAgreement(t *testing.T) {
 			Type:     model.AGREEMENT,
 			Provider: provider, Client: client,
 			Creation:   time.Now(),
-			Expiration: time.Now().Add(24 * time.Hour),
+			Expiration: &expiration,
 			Guarantees: []model.Guarantee{
 				model.Guarantee{Name: "TestGuarantee", Constraint: "test_value > 10"},
 			},

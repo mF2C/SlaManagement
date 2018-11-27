@@ -33,14 +33,20 @@ func TestCallThroughMethods(t *testing.T) {
 	r, _ := memrepository.New(nil)
 	v, _ := New(r, true)
 
+	a, err := readAgreement("testdata/a.json")
+	if err != nil {
+		t.Errorf("Error reading agreement: %v", err)
+	}
+
 	v.GetProvider("id")
 	v.GetAllProviders()
 	v.GetAgreement("id")
 	v.GetAllAgreements()
-	v.GetActiveAgreements()
+	v.GetAgreementsByState()
 	v.GetViolation("id")
-	v.StartAgreement("id")
-	v.StopAgreement("id")
+	v.CreateAgreement(a)
+	v.UpdateAgreement(a)
+	v.UpdateAgreementState(a.Id, model.TERMINATED)
 }
 
 func TestRepositoryWithExternalIds(t *testing.T) {
@@ -97,12 +103,12 @@ func TestRepositoryWithExternalIds(t *testing.T) {
 	}
 
 	vi := &model.Violation{
-		Id: "",
+		Id:          "",
 		AgreementId: "id",
-		Guarantee: "gt",
-		Datetime: time.Now(),
-		Constraint: "var < 100",
-		Values: map[string]interface{} { "var": 101 },
+		Guarantee:   "gt",
+		Datetime:    time.Now(),
+		Constraint:  "var < 100",
+		Values:      []model.MetricValue{{Key: "var", Value: 101, DateTime: time.Now()}},
 	}
 	vi, err = v.CreateViolation(vi)
 	if err != nil {
@@ -156,12 +162,12 @@ func TestRepositoryWithoutExternalIds(t *testing.T) {
 	}
 
 	vi := &model.Violation{
-		Id: "",
+		Id:          "",
 		AgreementId: "id",
-		Guarantee: "gt",
-		Datetime: time.Now(),
-		Constraint: "var < 100",
-		Values: map[string]interface{} { "var": 101 },
+		Guarantee:   "gt",
+		Datetime:    time.Now(),
+		Constraint:  "var < 100",
+		Values:      []model.MetricValue{{Key: "var", Value: 101, DateTime: time.Now()}},
 	}
 	vi, err = v.CreateViolation(vi)
 	if err == nil {

@@ -20,6 +20,7 @@ limitations under the License.
 package cimiadapter
 
 import (
+	assessment_model "SLALite/assessment/model"
 	"SLALite/assessment/monitor"
 	"SLALite/model"
 	"SLALite/repositories/cimi"
@@ -40,8 +41,7 @@ type operationName string
 type adapter struct {
 	repository AdapterRepository
 	agreement  *model.Agreement
-	metrics    map[operationName][]monitor.MetricValue
-	i          map[operationName]int // index over array map[operationName][]MetricValue
+	metrics    map[operationName]assessment_model.GuaranteeData
 }
 
 // AdapterRepository is the interface of any repository used to get
@@ -87,47 +87,36 @@ func (ma *adapter) Initialize(a *model.Agreement) {
 	log.Printf("cimiadapter.Initialize(): reports=%#v", reports)
 
 	ma.agreement = a
-	ma.metrics = make(map[operationName][]monitor.MetricValue)
-	ma.i = make(map[operationName]int)
+
+	ma.metrics = make(map[operationName]assessment_model.GuaranteeData)
 	for _, r := range reports {
-		mv := monitor.MetricValue{
+		mv := model.MetricValue{
 			Key:      ExecTimeName,
 			Value:    r.ExecutionTime,
 			DateTime: r.Created,
 		}
+		data := make(assessment_model.ExpressionData)
+		data[mv.Key] = mv
 
 		var op = operationName(r.Operation)
 		if _, ok := ma.metrics[op]; !ok {
-			ma.metrics[op] = make([]monitor.MetricValue, 0)
-			ma.i[op] = 0
+			ma.metrics[op] = make(assessment_model.GuaranteeData, 0)
 		}
-		ma.metrics[op] = append(ma.metrics[op], mv)
+		ma.metrics[op] = append(ma.metrics[op], data)
 
 		//
 		// Manage catchall term
 		//
 		if _, ok := ma.metrics[catchAllName]; !ok {
-			ma.metrics[catchAllName] = make([]monitor.MetricValue, 0)
-			ma.i[catchAllName] = 0
+			ma.metrics[catchAllName] = make(assessment_model.GuaranteeData, 0)
 		}
-		ma.metrics[catchAllName] = append(ma.metrics[catchAllName], mv)
+		ma.metrics[catchAllName] = append(ma.metrics[catchAllName], data)
 	}
 }
 
-func (ma *adapter) NextValues(gt model.Guarantee) map[string]monitor.MetricValue {
+func (ma *adapter) GetValues(gt model.Guarantee, vars []string) assessment_model.GuaranteeData {
 	// XXX We are assuming for IT-1 only one var per constraint
 
 	var op = operationName(gt.Name)
-	i := ma.i[op]
-	l := ma.metrics[op]
-
-	if i == len(l) {
-		return nil
-	}
-	m := l[i]
-	result := make(map[string]monitor.MetricValue)
-	result[m.Key] = m
-	ma.i[op]++
-
-	return result
+	return ma.metrics[op]
 }

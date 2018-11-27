@@ -76,7 +76,7 @@ func TestEvaluate(t *testing.T) {
 	}
 }
 
-func TestNextValues(t *testing.T) {
+func TestGetValues(t *testing.T) {
 	a, r, err := initVars()
 	if err != nil {
 		t.Errorf("Error reading agreement: %v", err)
@@ -88,17 +88,9 @@ func TestNextValues(t *testing.T) {
 	gt := a.Details.Guarantees[0]
 
 	/* Two values should be provided */
-	values := adapter.NextValues(gt)
-	if len(values) != 1 {
-		t.Errorf("Unexpected NextValues result: %v", values)
-	}
-	values = adapter.NextValues(gt)
-	if len(values) != 1 {
-		t.Errorf("Unexpected NextValues result: %v", values)
-	}
-	values = adapter.NextValues(gt)
-	if values != nil {
-		t.Errorf("Unexpected NextValues result: %v", values)
+	values := adapter.GetValues(gt, []string{ExecTimeName})
+	if len(values) != 2 {
+		t.Errorf("Unexpected GetValues result: %v", values)
 	}
 }
 

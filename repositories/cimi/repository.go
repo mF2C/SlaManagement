@@ -384,8 +384,8 @@ func (r Repository) GetAgreement(id string) (*model.Agreement, error) {
 	return target, err
 }
 
-// GetActiveAgreements (see model.Repository)
-func (r Repository) GetActiveAgreements() (model.Agreements, error) {
+// GetAgreementsByState (see model.Repository)
+func (r Repository) GetAgreementsByState(states ...model.State) (model.Agreements, error) {
 	return nil, errors.New("Not implemented")
 }
 
@@ -455,16 +455,34 @@ func (r Repository) UpdateAgreement(agreement *model.Agreement) (*model.Agreemen
 	return agreement, err
 }
 
+// UpdateAgreementState (see model.Repository)
+func (r Repository) UpdateAgreementState(id string, newState model.State) (*model.Agreement, error) {
+	a := new(Agreement)
+
+	subpath := r.subpath(pathAgreements, id)
+	err := r.get(subpath, "", a)
+	if err != nil {
+		return nil, err
+	}
+	a.State = model.STOPPED
+	err = r.put(subpath, a)
+	return &a.Agreement, err
+}
+
 // CreateViolation stores a violation in the CIMI server
 func (r Repository) CreateViolation(v *model.Violation) (*model.Violation, error) {
 	var acl = r.getACL()
 
+	values := make(map[string]interface{})
+	for _, m := range v.Values {
+		values[m.Key] = m.Value
+	}
 	cimiv := &Violation{
 		AgreementId: Href{v.AgreementId},
 		Datetime:    v.Datetime,
 		Guarantee:   v.Guarantee,
 		Constraint:  v.Constraint,
-		Values:      v.Values,
+		Values:      values,
 		ACL:         acl,
 	}
 	err := r.post(pathViolations, cimiv)

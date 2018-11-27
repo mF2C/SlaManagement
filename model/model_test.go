@@ -144,6 +144,7 @@ func TestStates(t *testing.T) {
 	if !a.IsStopped() {
 		t.Error("Agreement should be stopped")
 	}
+
 	a = Agreement{State: STARTED}
 	if !a.IsStarted() {
 		t.Error("Agreement should be started")
@@ -151,6 +152,35 @@ func TestStates(t *testing.T) {
 	a = Agreement{State: TERMINATED}
 	if !a.IsTerminated() {
 		t.Error("Agreement should be terminated")
+	}
+}
+
+func TestIsValidTransition(t *testing.T) {
+
+	type transition struct {
+		old State
+		new State
+	}
+
+	a := Agreement{}
+	transitions := map[transition]bool{
+		{STOPPED, STOPPED}:       true,
+		{STOPPED, STARTED}:       true,
+		{STOPPED, TERMINATED}:    true,
+		{STARTED, STOPPED}:       true,
+		{STARTED, STARTED}:       true,
+		{STARTED, TERMINATED}:    true,
+		{TERMINATED, STOPPED}:    false,
+		{TERMINATED, STARTED}:    false,
+		{TERMINATED, TERMINATED}: false,
+	}
+
+	for transition, valid := range transitions {
+		a.State = transition.old
+		if a.IsValidTransition(transition.new) != valid {
+			t.Errorf("IsValidTransition from %s to %s. Expected: %v. Actual: %v",
+				a.State, transition.new, valid, !valid)
+		}
 	}
 }
 
@@ -208,17 +238,6 @@ func TestAgreementSerialization(t *testing.T) {
 func TestViolation(t *testing.T) {
 	var v = Violation{}
 	checkNumber(t, &v, 6)
-
-	v = Violation{
-		Id:          "v-id",
-		AgreementId: "ag-id",
-		Datetime:    time.Now(),
-		Guarantee:   "gt-name",
-		Constraint:  "var < threshold",
-		Values: map[string]interface{}{
-			"var": 10,
-		},
-	}
 }
 
 func TestViolationSerialization(t *testing.T) {
@@ -229,7 +248,7 @@ func TestViolationSerialization(t *testing.T) {
 		"datetime": "2018-05-15T14:15:00Z",
 		"guarantee": "gt-name",
 		"constraint": "var1 < 100 and var2 > 100",
-		"values": { "var1": 101, "var2": 100}
+		"values": [{ "key": "var1", "value": 101, "datetime": "2018-05-15T14:15:01Z"}, { "key": "var2", "value": 100, "datetime": "2018-05-15T14:15:02Z"}]
 	}`
 	err := json.NewDecoder(strings.NewReader(s)).Decode(&v)
 	if err != nil {

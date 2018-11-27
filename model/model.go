@@ -171,7 +171,7 @@ type Details struct {
 	Provider   Provider    `json:"provider"`
 	Client     Client      `json:"client"`
 	Creation   time.Time   `json:"creation"`
-	Expiration time.Time   `json:"expiration"`
+	Expiration *time.Time  `json:"expiration,omitempty"`
 	Guarantees []Guarantee `json:"guarantees"`
 }
 
@@ -190,14 +190,25 @@ type PenaltyDef struct {
 	Unit  string `json:"unit"`
 }
 
+// MetricValue is the SLALite representation of a metric value.
+type MetricValue struct {
+	Key      string      `json:"key"`
+	Value    interface{} `json:"value"`
+	DateTime time.Time   `json:"datetime"`
+}
+
+func (v *MetricValue) String() string {
+	return fmt.Sprintf("{Key: %s, Value: %v, DateTime: %v}", v.Key, v.Value, v.DateTime)
+}
+
 // Violation is generated when a guarantee term is not fulfilled
 type Violation struct {
-	Id          string                 `json:"id"`
-	AgreementId string                 `json:"agreement_id"`
-	Guarantee   string                 `json:"guarantee"`
-	Datetime    time.Time              `json:"datetime"`
-	Constraint  string                 `json:"constraint"`
-	Values      map[string]interface{} `json:"values"`
+	Id          string        `json:"id"`
+	AgreementId string        `json:"agreement_id"`
+	Guarantee   string        `json:"guarantee"`
+	Datetime    time.Time     `json:"datetime"`
+	Constraint  string        `json:"constraint"`
+	Values      []MetricValue `json:"values"`
 }
 
 // Penalty is generated when a guarantee term is violated is the term has
@@ -228,6 +239,11 @@ func (a *Agreement) IsTerminated() bool {
 // IsStopped is true if the agreement state is STOPPED
 func (a *Agreement) IsStopped() bool {
 	return a.State == STOPPED
+}
+
+// IsValidTransition returns if the transition to newState is valid
+func (a *Agreement) IsValidTransition(newState State) bool {
+	return a.State != TERMINATED
 }
 
 // Validate validates the consistency of an Agreement.
@@ -326,6 +342,11 @@ func normalizeState(s State) State {
 		}
 	}
 	return STOPPED
+}
+
+// Normalize returns an always valid state: any different value from contained in States is STOPPED.
+func (s State) Normalize() State {
+	return normalizeState(s)
 }
 
 // Providers is the type of an slice of Provider

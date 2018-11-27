@@ -22,7 +22,6 @@ package mongodb
 import (
 	"SLALite/model"
 	"fmt"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -32,6 +31,8 @@ import (
 )
 
 const (
+	// Name is the unique identifier of this repository
+	Name                    string = "mongodb"
 	defaultURL              string = "localhost"
 	repositoryDbName        string = "slalite"
 	providersCollectionName string = "Providers"
@@ -226,13 +227,14 @@ func (r MongoDBRepository) GetAgreement(id string) (*model.Agreement, error) {
 }
 
 /*
-GetActiveAgreements returns the list of active agreements.
+GetAgreementsByState returns the agreements that have one of the items in states.
 
-error != nil on error
+error != nil on error;
 */
-func (r MongoDBRepository) GetActiveAgreements() (model.Agreements, error) {
+func (r MongoDBRepository) GetAgreementsByState(states ...model.State) (model.Agreements, error) {
 	output := new(model.Agreements)
-	query := bson.M{"state": model.STARTED, "details.expiration": bson.M{"$gte": time.Now()}}
+
+	query := bson.M{"state": bson.M{"$in": states}}
 	result, err := r.getList(agreementCollectionName, query, output)
 	return *((result).(*model.Agreements)), err
 }
@@ -267,24 +269,6 @@ func (r MongoDBRepository) DeleteAgreement(agreement *model.Agreement) error {
 }
 
 /*
-StartAgreement starts monitoring the agreement provided by id.
-
-error != nil on error
-*/
-func (r MongoDBRepository) StartAgreement(id string) error {
-	return r.update(agreementCollectionName, id, bson.M{"$set": bson.M{"state": model.STARTED}})
-}
-
-/*
-StopAgreement stops monitoring the agreement provided by id.
-
-error != nil on error
-*/
-func (r MongoDBRepository) StopAgreement(id string) error {
-	return r.update(agreementCollectionName, id, bson.M{"$set": bson.M{"state": model.STOPPED}})
-}
-
-/*
 CreateViolation stores a new Violation.
 
 error != nil on error;
@@ -302,4 +286,19 @@ error is sql.ErrNoRows if the Violation is not found
 */
 func (r MongoDBRepository) GetViolation(id string) (*model.Violation, error) {
 	return nil, fmt.Errorf("Not implemented")
+}
+
+/*
+UpdateAgreementState transits the state of the agreement
+*/
+func (r MongoDBRepository) UpdateAgreementState(id string, newState model.State) (*model.Agreement, error) {
+
+	var err error
+	var agreement *model.Agreement
+
+	err = r.update(agreementCollectionName, id, bson.M{"$set": bson.M{"state": newState}})
+	if err == nil {
+		agreement, _ = r.GetAgreement(id)
+	}
+	return agreement, err
 }
