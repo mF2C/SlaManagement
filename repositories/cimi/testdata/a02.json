@@ -1,0 +1,19 @@
+{
+    "id": "a02",
+    "name": "Agreement02",
+    "state": "started",
+    "details":{
+        "id": "a02",
+        "type": "agreement",
+        "name": "Agreement02",
+        "provider": { "id": "mf2c", "name": "mF2C Platform" },
+        "client": { "id": "c02", "name": "A client" },
+        "creation": "2018-01-16T17:09:45.01Z",
+        "expiration": "2018-01-16T17:09:45.01Z",
+        "guarantees": []
+    },
+    "assessment": {
+        "first_execution": "2018-01-16T17:09:45.01Z",
+        "last_execution": "2018-01-16T17:09:45.01Z"
+    }
+}

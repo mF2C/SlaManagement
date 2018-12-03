@@ -40,8 +40,12 @@ import (
 )
 
 type method string
+type path string
 
 const (
+	// Name is the repository identifier
+	Name = "cimi"
+
 	urlProp           = "cimiurl"
 	defaultURL string = "https://localhost:10443/api"
 
@@ -59,11 +63,12 @@ const (
 
 	anonUser string = "anon"
 
-	pathOperations       = "service-operation-report"
-	pathAgreements       = "agreement"
-	pathViolations       = "sla-violation"
-	pathUserProfiles     = "user-profile"
-	pathServiceInstances = "service-instance"
+	pathSession          path = "session"
+	pathOperations       path = "service-operation-report"
+	pathAgreements       path = "agreement"
+	pathViolations       path = "sla-violation"
+	pathUserProfiles     path = "user-profile"
+	pathServiceInstances path = "service-instance"
 
 	authHeader = "slipstream-authn-info"
 
@@ -190,7 +195,7 @@ func login(repo *Repository) error {
 	}
 	jsonValue, _ := json.Marshal(values)
 
-	resp, err := repo.client.Post(repo.path("session"), "application/json", bytes.NewBuffer(jsonValue))
+	resp, err := repo.client.Post(repo.path(pathSession), "application/json", bytes.NewBuffer(jsonValue))
 
 	var msg string
 
@@ -216,8 +221,8 @@ func login(repo *Repository) error {
 	return err
 }
 
-func (r Repository) path(resource string) string {
-	return r.baseurl + "/" + resource
+func (r Repository) path(resource path) string {
+	return r.baseurl + "/" + string(resource)
 }
 
 func (r Repository) stripID(id string) string {
@@ -226,11 +231,11 @@ func (r Repository) stripID(id string) string {
 	return parts[len(parts)-1]
 }
 
-func (r Repository) subpath(resource, id string) string {
+func (r Repository) subpath(resource path, id string) path {
 	if id == "" {
 		return resource
 	}
-	return resource + "/" + r.stripID(id)
+	return resource + "/" + path(r.stripID(id))
 }
 
 func (r Repository) request(method method, url string, content interface{}, target interface{}) error {
@@ -259,6 +264,9 @@ func (r Repository) request(method method, url string, content interface{}, targ
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == 404 {
+		return model.ErrNotFound
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("Unexpected status: %v %s", resp.Status, string(body))
@@ -271,7 +279,7 @@ func (r Repository) request(method method, url string, content interface{}, targ
 	return err
 }
 
-func (r Repository) get(resource string, filter string, target interface{}) error {
+func (r Repository) get(resource path, filter string, target interface{}) error {
 	if !r.logged {
 		err := login(&r)
 		if err != nil {
@@ -283,30 +291,32 @@ func (r Repository) get(resource string, filter string, target interface{}) erro
 	if filter != "" {
 		url = fmt.Sprintf("%s?$filter=%s", url, filter)
 	}
-	log.Printf("CimiRepository.read() url=%s", url)
+	//log.Printf("CimiRepository.read() url=%s", url)
 
 	err := r.request(GET, url, nil, target)
 
 	return err
 }
 
-func (r Repository) post(resource string, entity interface{}) error {
+func (r Repository) post(resource path, entity interface{}) (string, error) {
 
 	if !r.logged {
 		err := login(&r)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
 	url := r.path(resource)
-
-	err := r.request(POST, url, entity, nil)
-
-	return err
+	target := new(createResult)
+	err := r.request(POST, url, entity, target)
+	if err != nil {
+		return "", err
+	}
+	return target.ResourceId, nil
 }
 
-func (r Repository) put(resource string, entity interface{}) error {
+func (r Repository) put(resource path, entity interface{}) error {
 
 	if !r.logged {
 		err := login(&r)
@@ -322,7 +332,7 @@ func (r Repository) put(resource string, entity interface{}) error {
 	return err
 }
 
-func (r Repository) delete(resource string) error {
+func (r Repository) delete(resource path) error {
 
 	if !r.logged {
 		err := login(&r)
@@ -391,7 +401,17 @@ func (r Repository) GetAgreementsByState(states ...model.State) (model.Agreement
 
 // CreateAgreement (see model.Repository)
 func (r Repository) CreateAgreement(agreement *model.Agreement) (*model.Agreement, error) {
-	return nil, errors.New("Not implemented")
+	var acl = r.getACL()
+
+	cimia := &Agreement{
+		*agreement,
+		acl,
+	}
+	newId, err := r.post(pathAgreements, cimia)
+	if err == nil {
+		agreement.Id = newId
+	}
+	return agreement, err
 }
 
 // DeleteAgreement (see model.Repository)
@@ -405,7 +425,8 @@ func (r Repository) DeleteAgreement(agreement *model.Agreement) error {
 // StartAgreement (see model.Repository)
 func (r Repository) StartAgreement(id string) error {
 	subpath := r.subpath(pathAgreements, id)
-	a, err := r.GetAgreement(subpath)
+
+	a, err := r.GetAgreement(id)
 	if err != nil {
 		return err
 	}
@@ -424,7 +445,7 @@ func (r Repository) StartAgreement(id string) error {
 // StopAgreement (see model.Repository)
 func (r Repository) StopAgreement(id string) error {
 	subpath := r.subpath(pathAgreements, id)
-	a, err := r.GetAgreement(subpath)
+	a, err := r.GetAgreement(id)
 	if err != nil {
 		return err
 	}
@@ -464,7 +485,7 @@ func (r Repository) UpdateAgreementState(id string, newState model.State) (*mode
 	if err != nil {
 		return nil, err
 	}
-	a.State = model.STOPPED
+	a.State = newState
 	err = r.put(subpath, a)
 	return &a.Agreement, err
 }
@@ -485,17 +506,38 @@ func (r Repository) CreateViolation(v *model.Violation) (*model.Violation, error
 		Values:      values,
 		ACL:         acl,
 	}
-	err := r.post(pathViolations, cimiv)
+	newId, err := r.post(pathViolations, cimiv)
+	if err == nil {
+		v.Id = newId
+	}
+	fmt.Printf("cimiv: %#v\n", cimiv)
+	fmt.Printf("v: %#v\n", v)
 	return v, err
 }
 
 // GetViolation gets a violation from the CIMI server by its ID
 func (r Repository) GetViolation(id string) (*model.Violation, error) {
-	target := new(model.Violation)
+	target := new(Violation)
 	subpath := r.subpath(pathViolations, id)
 	err := r.get(subpath, "", target)
-
-	return target, err
+	values := make([]model.MetricValue, 0, 1)
+	for k, v := range target.Values {
+		m := model.MetricValue{
+			Key:      k,
+			Value:    v,
+			DateTime: target.Datetime,
+		}
+		values = append(values, m)
+	}
+	v := &model.Violation{
+		Id:          target.Id,
+		AgreementId: target.AgreementId.Href,
+		Datetime:    target.Datetime,
+		Guarantee:   target.Guarantee,
+		Constraint:  target.Constraint,
+		Values:      values,
+	}
+	return v, err
 }
 
 // CreateServiceOperationReport stores an execution log in the CIMI server
@@ -503,7 +545,11 @@ func (r *Repository) CreateServiceOperationReport(e *ServiceOperationReport) (*S
 	var acl = r.getACL()
 
 	e.ACL = acl
-	err := r.post(pathOperations, e)
+	newId, err := r.post(pathOperations, e)
+	if err != nil {
+		return nil, err
+	}
+	e.Id = newId
 	return e, err
 }
 

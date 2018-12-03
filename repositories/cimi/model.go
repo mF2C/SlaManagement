@@ -46,6 +46,12 @@ type agreementCollection struct {
 	Agreements []model.Agreement `json:"agreements"`
 }
 
+type createResult struct {
+	Status     int    `json:"status"`
+	Message    string `json:"message"`
+	ResourceId string `json:"resource-id"`
+}
+
 // Agreement is the repr. of a CIMI agreement
 type Agreement struct {
 	model.Agreement

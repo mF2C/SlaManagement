@@ -1,0 +1,15 @@
+{
+    "id": "a03",
+    "name": "Agreement03",
+    "state": "terminated",
+    "details":{
+        "id": "a03",
+        "type": "agreement",
+        "name": "Agreement03",
+        "provider": { "id": "mf2c", "name": "mF2C Platform" },
+        "client": { "id": "c02", "name": "A client" },
+        "creation": "2018-01-16T17:09:45.01Z",
+        "expiration": "2018-01-16T17:09:45.01Z",
+        "guarantees": []
+    }
+}
