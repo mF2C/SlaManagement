@@ -18,6 +18,7 @@ package assessment
 
 import (
 	"SLALite/assessment/monitor"
+	"SLALite/mf2c"
 	"SLALite/model"
 	"SLALite/repositories/cimi"
 	"log"
@@ -29,7 +30,9 @@ This file contains the mF2C asssessment code
 */
 
 // AssessMf2cAgreements is the main process for the mf2c assessment
-func AssessMf2cAgreements(repo model.IRepository, mf2cRepo cimi.IRepository, ma monitor.MonitoringAdapter) {
+func AssessMf2cAgreements(repo model.IRepository, mf2cRepo cimi.IRepository,
+	ma monitor.MonitoringAdapter, policies mf2c.Policies) {
+
 	agreements, err := repo.GetAllAgreements()
 	log.Printf("Running assessment. Processing %d agreement(s)", len(agreements))
 	if err != nil {
