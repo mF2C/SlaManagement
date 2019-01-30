@@ -6,4 +6,6 @@ cimipwd: super ADMIN
 cimiinsecure: true
 cimiurl: https://proxy:443/api
 
+policies: http://policies:46050/api
+
 port: 46030
