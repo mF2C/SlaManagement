@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 	}
 
 	if repo, err = createRepository(); err != nil {
-		log.Fatal("Error creating repository: %s", err.Error())
+		log.Fatalf("Error creating repository: %s", err.Error())
 	}
 	// if err = model.CheckSetup(repo); err != nil {
 	// 	log.Fatalf("Cannot run test: %s", err.Error())
