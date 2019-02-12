@@ -18,9 +18,11 @@ package assessment
 
 import (
 	"SLALite/assessment/monitor/cimiadapter"
+	"SLALite/mf2c"
 	"SLALite/model"
 	"SLALite/repositories/cimi"
 	"SLALite/repositories/memrepository"
+	"SLALite/utils/rest"
 	"fmt"
 	"testing"
 	"time"
@@ -31,6 +33,13 @@ var client = model.Client{Id: "c02", Name: "A client"}
 
 type mf2cTestRepo struct {
 	*memrepository.MemRepository
+}
+
+type failingPolicies struct {
+}
+
+func (o failingPolicies) IsLeader() (bool, error) {
+	return false, rest.Error{Code: 404, Message: fmt.Sprint("Path not found")}
 }
 
 func (r mf2cTestRepo) GetServiceOperationReportsByDate(
@@ -45,9 +54,21 @@ func (r mf2cTestRepo) GetServiceInstancesByAgreement(aID string) ([]cimi.Service
 	return nil, nil
 }
 
+func TestIsNotLeader(t *testing.T) {
+	var policies = mf2c.NewPoliciesMock(false)
+	AssessMf2cAgreements(nil, nil, nil, policies)
+}
+
+func TestErrorGettingIsLeader(t *testing.T) {
+	var policies = failingPolicies{}
+	AssessMf2cAgreements(nil, nil, nil, policies)
+	// AssessMf2cAgreements should return a code or error to check behaviour
+}
+
 func TestStartedAgreement(t *testing.T) {
 	var memRepo, _ = memrepository.New(nil)
 	var mf2cRepo = mf2cTestRepo{&memRepo}
+	var policies = mf2c.NewPoliciesMock(true)
 
 	expiration := time.Now().Add(24 * time.Hour)
 
@@ -74,7 +95,7 @@ func TestStartedAgreement(t *testing.T) {
 	mf2cRepo.CreateAgreement(&a)
 
 	ma := cimiadapter.New(mf2cRepo)
-	AssessMf2cAgreements(mf2cRepo, mf2cRepo, ma)
+	AssessMf2cAgreements(mf2cRepo, mf2cRepo, ma, policies)
 	pa, _ := mf2cRepo.GetAgreement("id")
 	if pa.Assessment == nil {
 		t.Errorf("Unexpected final conditions: Assessment == nil\n")
@@ -87,9 +108,10 @@ func TestStoppedAgreement(t *testing.T) {
 
 	var memRepo, _ = memrepository.New(nil)
 	var mf2cRepo = mf2cTestRepo{&memRepo}
+	var policies = mf2c.NewPoliciesMock(true)
 
 	expiration := time.Now().Add(24 * time.Hour)
-	
+
 	a := model.Agreement{
 		Id:    "id",
 		Name:  "name",
@@ -113,7 +135,7 @@ func TestStoppedAgreement(t *testing.T) {
 	mf2cRepo.CreateAgreement(&a)
 
 	ma := cimiadapter.New(mf2cRepo)
-	AssessMf2cAgreements(mf2cRepo, mf2cRepo, ma)
+	AssessMf2cAgreements(mf2cRepo, mf2cRepo, ma, policies)
 	pa, _ := mf2cRepo.GetAgreement("id")
 	if pa.Assessment != nil {
 		t.Errorf("Unexpected final conditions: Assessment != nil\n")

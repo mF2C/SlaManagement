@@ -20,6 +20,7 @@ import (
 	"SLALite/assessment/monitor"
 	"SLALite/assessment/monitor/cimiadapter"
 	"SLALite/assessment/notifier"
+	"SLALite/mf2c"
 	"SLALite/model"
 	"SLALite/repositories/cimi"
 	"SLALite/repositories/memrepository"
@@ -37,6 +38,7 @@ import (
 )
 
 var cimirepo cimi.Repository
+var policies mf2c.PoliciesConnecter
 
 // version and date are defined on compilation (see makefile)
 var version string
@@ -79,6 +81,12 @@ func main() {
 
 	if errRepo != nil {
 		log.Fatal("Error creating repository: ", errRepo.Error())
+	}
+
+	var err error
+	policies, err = mf2c.NewPolicies(config)
+	if err != nil {
+		log.Fatal("Error creating Policies: ", err.Error())
 	}
 
 	repo, _ = validation.New(repo, true)
@@ -161,5 +169,5 @@ func validateProviders(repo model.IRepository) {
 
 func assessMf2cAgreements(repo model.IRepository) {
 	ma := cimiadapter.New(cimirepo)
-	assessment.AssessMf2cAgreements(repo, cimirepo, ma)
+	assessment.AssessMf2cAgreements(repo, cimirepo, ma, policies)
 }
