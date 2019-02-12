@@ -38,7 +38,7 @@ import (
 )
 
 var cimirepo cimi.Repository
-var policies *mf2c.Policies
+var policies mf2c.PoliciesConnecter
 
 // version and date are defined on compilation (see makefile)
 var version string

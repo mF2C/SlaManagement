@@ -61,7 +61,7 @@ func createPolicies(policiesURL string) (Policies, error) {
 	config.SetEnvPrefix(utils.ConfigPrefix) // Env vars start with 'SLA_'
 	config.Set(urlProp, policiesURL)
 	config.AutomaticEnv()
-	policies, err := NewPolicies(config)
+	policies, err := NewPoliciesClient(config)
 	return *policies, err
 }
 

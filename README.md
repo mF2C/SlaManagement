@@ -103,6 +103,11 @@ Usage of SLALite:
 * `clear_on_boot` (default: `false`). Sets if the database is cleared on
   startup (useful for tests).
 
+*MF2C settings*
+
+* `policies` (default: `https://localhost:46050/api`). Sets the location of the Policies component.
+* `isleader` (default: ""). If not empty, this setting, interpreted as a boolean, is used to check if the SLALite is running on a leader or not.
+
 #### Env vars  ####
 
 Every file setting can be overriden with the use of environment variables.

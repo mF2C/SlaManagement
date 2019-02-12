@@ -31,8 +31,17 @@ This file contains the mF2C asssessment code
 
 // AssessMf2cAgreements is the main process for the mf2c assessment
 func AssessMf2cAgreements(repo model.IRepository, mf2cRepo cimi.IRepository,
-	ma monitor.MonitoringAdapter, policies mf2c.Policies) {
+	ma monitor.MonitoringAdapter, policies mf2c.PoliciesConnecter) {
 
+	// Checking if running on the leader
+	leader, err := policies.IsLeader()
+	if err != nil {
+		log.Printf("Error connecting to Policies component (%v). Skipping assessment...", err)
+		return
+	} else if !leader {
+		log.Printf("Not running on leader. Exiting...")
+		return
+	}
 	agreements, err := repo.GetAllAgreements()
 	log.Printf("Running assessment. Processing %d agreement(s)", len(agreements))
 	if err != nil {

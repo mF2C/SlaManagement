@@ -31,12 +31,27 @@ const (
 	urlProp           = "policies"
 	defaultURL string = "https://localhost:46050/api"
 
+	// IsLeaderProp is the env var name that contains the value to build the PoliciesMock
+	isLeaderProp = "isleader"
+
 	pathIsLeader = "v1/resource-management/policies/leaderinfo"
 )
+
+// PoliciesConnecter defines the methods that a connector to the Policies component
+// must declare.
+type PoliciesConnecter interface {
+	IsLeader() (bool, error)
+}
 
 // Policies is the struct to connect to a Policies component
 type Policies struct {
 	client *rest.Client
+}
+
+// PoliciesMock is the struct that returns predefined answers instead of connecting
+// to a Policies component
+type PoliciesMock struct {
+	isLeader bool
 }
 
 type isLeader struct {
@@ -44,13 +59,23 @@ type isLeader struct {
 	ImLeader bool `json:"imLeader"`
 }
 
-// NewPolicies returns a Policies component client
-func NewPolicies(config *viper.Viper) (*Policies, error) {
+// NewPolicies is a facade that uses the 'isLeaderProp' configuration
+// parameter to return a Policies client or a PoliciesMock
+func NewPolicies(config *viper.Viper) (PoliciesConnecter, error) {
 	if config == nil {
 		return nil, errors.New("Must provide config to mf2c.policies.NewPolicies()")
 	}
 	setDefaults(config)
 	logConfig(config)
+
+	if config.GetString(isLeaderProp) != "" {
+		return NewPoliciesMock(config.GetBool(isLeaderProp)), nil
+	}
+	return NewPoliciesClient(config)
+}
+
+// NewPoliciesClient returns a Policies component client
+func NewPoliciesClient(config *viper.Viper) (*Policies, error) {
 
 	baseurl := config.GetString(urlProp)
 
@@ -65,13 +90,29 @@ func NewPolicies(config *viper.Viper) (*Policies, error) {
 	return &policies, nil
 }
 
+// NewPoliciesMock constructs a new PoliciesConnector that returns the values
+// passed as parameter on construction
+// (e.g., IsLeader() returns the parameter isLeader)
+func NewPoliciesMock(isLeader bool) PoliciesConnecter {
+	return PoliciesMock{
+		isLeader: isLeader,
+	}
+}
+
 func setDefaults(config *viper.Viper) {
 	config.SetDefault(urlProp, defaultURL)
 }
 
 func logConfig(config *viper.Viper) {
+	leader := ""
+
+	if config.GetString(isLeaderProp) != "" {
+		leader = fmt.Sprint(config.GetBool(isLeaderProp))
+	}
 	log.Printf("Policies configuration\n"+
+		"\tisLeader: %v\n"+
 		"\tURL: %v\n",
+		leader,
 		config.GetString(urlProp))
 }
 
@@ -83,4 +124,9 @@ func (o Policies) IsLeader() (bool, error) {
 		return false, err
 	}
 	return target.ImLeader, nil
+}
+
+// IsLeader returns if the current agent is leader or not
+func (o PoliciesMock) IsLeader() (bool, error) {
+	return o.isLeader, nil
 }
