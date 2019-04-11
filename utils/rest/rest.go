@@ -124,7 +124,6 @@ func (r *Client) Request(method Method, subpath Path, content interface{}, targe
 	//url := r.BaseURL.ResolveReference(&url.URL{Path: string(subpath)})
 	url := *r.BaseURL
 	url.Path = path.Join(r.BaseURL.Path, string(subpath))
-	fmt.Printf("URL=%#v", url)
 	req, _ := http.NewRequest(string(method), url.String(), reader)
 	if reader != nil {
 		req.Header.Set("Content-type", "application/json")

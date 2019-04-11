@@ -46,6 +46,11 @@ type agreementCollection struct {
 	Agreements []model.Agreement `json:"agreements"`
 }
 
+type templateCollection struct {
+	Count     int              `json:"count"`
+	Templates []model.Template `json:"sla-templates"`
+}
+
 type createResult struct {
 	Status     int    `json:"status"`
 	Message    string `json:"message"`
@@ -55,6 +60,12 @@ type createResult struct {
 // Agreement is the repr. of a CIMI agreement
 type Agreement struct {
 	model.Agreement
+	ACL ACL `json:"acl"`
+}
+
+// Template is the repr. of a CIMI template
+type Template struct {
+	model.Template
 	ACL ACL `json:"acl"`
 }
 

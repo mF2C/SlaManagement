@@ -66,6 +66,7 @@ const (
 	pathSession          path = "session"
 	pathOperations       path = "service-operation-report"
 	pathAgreements       path = "agreement"
+	pathTemplates        path = "sla-template"
 	pathViolations       path = "sla-violation"
 	pathUserProfiles     path = "user-profile"
 	pathServiceInstances path = "service-instance"
@@ -488,6 +489,39 @@ func (r Repository) UpdateAgreementState(id string, newState model.State) (*mode
 	a.State = newState
 	err = r.put(subpath, a)
 	return &a.Agreement, err
+}
+
+// GetAllTemplates implements model.IRepository.GetAllTemplates
+func (r Repository) GetAllTemplates() (model.Templates, error) {
+	target := new(templateCollection)
+	err := r.get(pathTemplates, "", target)
+
+	return target.Templates, err
+
+}
+
+// GetTemplate implements model.IRepository.GetTemplate
+func (r Repository) GetTemplate(id string) (*model.Template, error) {
+	target := new(model.Template)
+	subpath := r.subpath(pathTemplates, id)
+	err := r.get(subpath, "", target)
+
+	return target, err
+}
+
+// CreateTemplate implements model.IRepository.CreateTemplate
+func (r Repository) CreateTemplate(template *model.Template) (*model.Template, error) {
+	var acl = r.getACL()
+
+	cimit := &Template{
+		*template,
+		acl,
+	}
+	newID, err := r.post(pathTemplates, cimit)
+	if err == nil {
+		template.Id = newID
+	}
+	return template, err
 }
 
 // CreateViolation stores a violation in the CIMI server

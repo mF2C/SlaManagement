@@ -83,7 +83,6 @@ func NewPoliciesClient(config *viper.Viper) (*Policies, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("URL=%#v", url)
 	policies := Policies{
 		client: rest.New(url, nil),
 	}

@@ -25,6 +25,7 @@ package cimi
 
 import (
 	"SLALite/model"
+	"SLALite/repositories"
 	"SLALite/utils"
 	"os"
 	"testing"
@@ -48,7 +49,7 @@ func TestMain(m *testing.M) {
 	if repo, err = createRepository(); err != nil {
 		log.Fatalf("Error creating repository: %s", err.Error())
 	}
-	// if err = model.CheckSetup(repo); err != nil {
+	// if err = repositories.CheckSetup(repo); err != nil {
 	// 	log.Fatalf("Cannot run test: %s", err.Error())
 	// }
 
@@ -65,9 +66,6 @@ func createRepository() (model.IRepository, error) {
 	config := viper.New()
 	config.SetEnvPrefix(utils.ConfigPrefix) // Env vars start with 'SLA_'
 	config.Set(insecureProp, true)
-	config.Set(userProp, anonUser)
-	config.Set(pwdProp, "super ADMIN")
-	config.Set(urlProp, "https://213.205.14.16:4433/api")
 	config.AutomaticEnv()
 	repo, err := New(config)
 	return repo, err
@@ -76,15 +74,15 @@ func createRepository() (model.IRepository, error) {
 func loadSamples() {
 	var err error
 
-	model.Data.A01, err = utils.ReadAgreement("testdata/a01.json")
+	repositories.Data.A01, err = utils.ReadAgreement("testdata/a01.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	model.Data.A02, err = utils.ReadAgreement("testdata/a02.json")
+	repositories.Data.A02, err = utils.ReadAgreement("testdata/a02.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	model.Data.A03, err = utils.ReadAgreement("testdata/a03.json")
+	repositories.Data.A03, err = utils.ReadAgreement("testdata/a03.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -98,88 +96,29 @@ func setup() {
 }
 
 func tearDown() {
-	repo.DeleteAgreement(&model.Data.A01)
-	repo.DeleteAgreement(&model.Data.A02)
-	repo.DeleteAgreement(&model.Data.A03)
+	repo.DeleteAgreement(&repositories.Data.A01)
+	repo.DeleteAgreement(&repositories.Data.A02)
+	repo.DeleteAgreement(&repositories.Data.A03)
 }
 
 func TestRepository(t *testing.T) {
+	ctx := repositories.TestContext{Repo: repo}
 	/* Agreements */
-	t.Run("CreateAgreement", testCreateAgreement)
-	t.Run("GetAllAgreements", testGetAllAgreements)
-	t.Run("GetAgreement", testGetAgreement)
-	t.Run("GetAgreementNotExists", testGetAgreementNotExists)
-	t.Run("UpdateAgreementState", testUpdateAgreementState)
-	t.Run("UpdateAgreementStateNotExists", testUpdateAgreementStateNotExists)
+	t.Run("CreateAgreement", ctx.TestCreateAgreement)
+	t.Run("GetAllAgreements", ctx.TestGetAllAgreements)
+	t.Run("GetAgreement", ctx.TestGetAgreement)
+	t.Run("GetAgreementNotExists", ctx.TestGetAgreementNotExists)
+	t.Run("UpdateAgreementState", ctx.TestUpdateAgreementState)
+	t.Run("UpdateAgreementStateNotExists", ctx.TestUpdateAgreementStateNotExists)
 	// t.Run("GetAgreementsByState", testGetAgreementsByState)
-	t.Run("UpdateAgreement", testUpdateAgreement)
-	t.Run("UpdateAgreementNotExists", testUpdateAgreementNotExists)
-	t.Run("DeleteAgreement", testDeleteAgreement)
-	t.Run("DeleteAgreementNotExists", testDeleteAgreementNotExists)
+	t.Run("UpdateAgreement", ctx.TestUpdateAgreement)
+	t.Run("UpdateAgreementNotExists", ctx.TestUpdateAgreementNotExists)
+	t.Run("DeleteAgreement", ctx.TestDeleteAgreement)
+	t.Run("DeleteAgreementNotExists", ctx.TestDeleteAgreementNotExists)
 
 	/* Violations */
-	t.Run("CreateViolation", testCreateViolation)
+	t.Run("CreateViolation", ctx.TestCreateViolation)
 
-	t.Run("GetViolation", testGetViolation)
-	t.Run("GetViolationNotExists", testGetViolationNotExists)
-}
-
-func testCreateAgreement(t *testing.T) {
-	model.TestCreateAgreement(t, repo)
-}
-
-func testGetAllAgreements(t *testing.T) {
-	model.TestGetAllAgreements(t, repo)
-}
-
-func testGetAgreement(t *testing.T) {
-	model.TestGetAgreement(t, repo)
-}
-
-func testGetAgreementNotExists(t *testing.T) {
-	model.TestGetAgreementNotExists(t, repo)
-}
-
-func testUpdateAgreementState(t *testing.T) {
-	model.TestUpdateAgreementState(t, repo)
-}
-
-func testUpdateAgreementStateNotExists(t *testing.T) {
-	model.TestUpdateAgreementStateNotExists(t, repo)
-}
-
-func testGetAgreementsByState(t *testing.T) {
-	model.TestGetAgreementsByState(t, repo)
-}
-
-func testUpdateAgreement(t *testing.T) {
-	model.TestUpdateAgreement(t, repo)
-}
-
-func testUpdateAgreementNotExists(t *testing.T) {
-	model.TestUpdateAgreementNotExists(t, repo)
-}
-
-func testDeleteAgreement(t *testing.T) {
-	model.TestDeleteAgreement(t, repo)
-}
-
-func testDeleteAgreementNotExists(t *testing.T) {
-	model.TestDeleteAgreementNotExists(t, repo)
-}
-
-func testCreateViolation(t *testing.T) {
-	model.TestCreateViolation(t, repo)
-}
-
-func testCreateViolationExists(t *testing.T) {
-	model.TestCreateViolationExists(t, repo)
-}
-
-func testGetViolation(t *testing.T) {
-	model.TestGetViolation(t, repo)
-}
-
-func testGetViolationNotExists(t *testing.T) {
-	model.TestGetViolationNotExists(t, repo)
+	t.Run("GetViolation", ctx.TestGetViolation)
+	t.Run("GetViolationNotExists", ctx.TestGetViolationNotExists)
 }
