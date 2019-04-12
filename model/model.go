@@ -147,11 +147,11 @@ func (c *Client) Validate(val Validator, mode ValidationMode) []error {
 // the fields in Details.
 // swagger:model
 type Template struct {
-	Id   string `json:"id" bson:"_id"`
-	Name string `json:"name"`
-	//	State       State             `json:"state"`
-	Details     Details           `json:"details"`
-	Constraints map[string]string `json:"constraints"`
+	Id      string  `json:"id" bson:"_id"`
+	Name    string  `json:"name"`
+	State   State   `json:"state"`
+	Details Details `json:"details"`
+	// mF2C commented Constraints map[string]string `json:"constraints"`
 }
 
 // CreateAgreement is the resource used to create an agreement from a template.

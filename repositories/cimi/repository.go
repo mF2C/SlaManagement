@@ -296,6 +296,11 @@ func (r Repository) get(resource path, filter string, target interface{}) error 
 
 	err := r.request(GET, url, nil, target)
 
+	if entity, ok := target.(model.Identity); ok {
+		if entity.GetId() == "" {
+			return model.ErrNotFound
+		}
+	}
 	return err
 }
 

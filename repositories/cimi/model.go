@@ -48,7 +48,7 @@ type agreementCollection struct {
 
 type templateCollection struct {
 	Count     int              `json:"count"`
-	Templates []model.Template `json:"sla-templates"`
+	Templates []model.Template `json:"templates"`
 }
 
 type createResult struct {
@@ -80,6 +80,11 @@ type Violation struct {
 	ACL         ACL                    `json:"acl"`
 }
 
+// GetId implements model.Identity
+func (v *Violation) GetId() string {
+	return v.Id
+}
+
 // ServiceOperationReport represents the execution time of a service operation in DER
 type ServiceOperationReport struct {
 	Id              string    `json:"id"`
@@ -89,6 +94,11 @@ type ServiceOperationReport struct {
 	Updated         time.Time `json:"updated"`
 	ExecutionTime   float64   `json:"execution_time"`
 	ACL             ACL       `json:"acl"`
+}
+
+// GetId implements model.Identity
+func (sor *ServiceOperationReport) GetId() string {
+	return sor.Id
 }
 
 type serviceOperationReportCollection struct {
@@ -107,6 +117,11 @@ type ServiceInstance struct {
 	Created   time.Time   `json:"created"`
 	Updated   time.Time   `json:"updated"`
 	Agents    interface{} `json:"agents"`
+}
+
+// GetId implements model.Identity
+func (si *ServiceInstance) GetId() string {
+	return si.Id
 }
 
 type serviceInstanceCollection struct {

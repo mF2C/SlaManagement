@@ -1,0 +1,15 @@
+{
+    "id": "v01",
+    "agreement_id": { "href" : "agreement/a01" },
+    "guarantee": "gt01",
+    "datetime": "2018-01-16T17:09:45.0Z",
+    "constraint": "responsetime < 1000",
+    "values": {
+        "responsetime": 2000
+    },
+    "acl": {
+        "owner": { "principal": "ADMIN", "type": "ROLE" },
+        "rules": [ { "type": "ROLE", "principal": "USER", "right": "MODIFY" } ]
+    }
+
+}
