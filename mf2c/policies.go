@@ -23,7 +23,7 @@ import (
 
 const (
 	pathAPI            = "api/v2"
-	policiesDefaultURL = "https://localhost:46050" + "/" + pathAPI
+	policiesDefaultURL = "http://localhost:46050" + "/" + pathAPI
 
 	pathIsLeader = "resource-management/policies/leaderinfo"
 )

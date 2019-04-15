@@ -105,10 +105,17 @@ Usage of SLALite:
 * `clear_on_boot` (default: `false`). Sets if the database is cleared on
   startup (useful for tests).
 
-*MF2C settings*
+*mF2C settings*
 
-* `policies` (default: `https://localhost:46050/api/v2`). Sets the root location of the Policies component API.
+The recommended way of running the mF2C SLA Management is using the Docker image 
+(https://hub.docker.com/r/mf2c/sla-management) in the docker-compose file
+(https://github.com/mF2C/mF2C).
+
+The parameters below and default values are intended for development purposes.
+
+* `policies` (default: `http://localhost:46050/api/v2`). Sets the root location of the Policies component API.
 * `isleader` (default: ""). If not empty, this setting, interpreted as a boolean, is used to check if the SLALite is running on a leader or not.
+* `analytics` (default: `http://localhost:46020`). Sets the root location of the Analytics component API.
 
 #### Env vars  ####
 
@@ -143,3 +150,11 @@ Create agreement from template:
     curl -k -X POST -d @resources/samples/create-agreement.json https://localhost:8090/create-agreement
 
     {"template_id":"t01","agreement_id":"9be511e8-347f-4a40-b784-e80789e4c65b","parameters":{"M":1,"N":100,"agreementname":"An agreement name","client":{"id":"client01","name":"A name of a client"},"provider":{"id":"provider01","name":"A name of a provider"}}}
+
+#### mF2C ####
+
+Create agreement from template. The needed property is the user launching the service:
+
+    curl -k -X POST -d @resources/samples/create-agreement-mf2c.json https://localhost:8090/mf2c/create-agreement
+
+    {"template_id":"t01","agreement_id":"9be511e8-347f-4a40-b784-e80789e4c65b","parameters":{"user":"a-user-id"}}
