@@ -1,0 +1,20 @@
+{
+    "id": "template_id",
+    "name": "Template 01",
+    "state": "started",
+    "details":{
+        "id": "template_id",
+        "type": "template",
+        "name": "service_name",
+        "provider": { "id": "mf2c", "name": "mF2C Platform" },
+        "client": { "id": "{{.user}}", "name": "{{.user}}" },
+        "creation": "2018-01-16T17:09:45.01Z",
+        "expiration": "2020-01-16T17:09:45.01Z",
+        "guarantees": [
+            {
+                "name": "es.bsc.compss.agent.test.Test.main",
+                "constraint": "execution_time < 1000"
+            }
+        ]
+    }
+}

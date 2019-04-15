@@ -159,6 +159,9 @@ func (a *App) initialize(repository model.IRepository) {
 
 	a.Router.Methods("POST").Path("/create-agreement").Handler(logger(a.CreateAgreementFromTemplate))
 
+	a.Router.Methods("POST").Path("/mf2c/create-agreement").
+		Handler(logger(a.Mf2cCreateAgreementFromTemplate))
+
 }
 
 // Run starts the REST API
@@ -747,6 +750,43 @@ func (a *App) CreateAgreementFromTemplate(w http.ResponseWriter, r *http.Request
 
 			return &out, nil
 		})
+}
+
+// Mf2cCreateAgreementFromTemplate generates an specific mF2C agreement from a template and parameters
+//
+// swagger:operation POST /mf2c/create-agreement mf2cCreateAgreementFromTemplate
+//
+// Creates an agreement from a template; templateId is the templateID to base the
+// agreement from; agreementID is an output field, containing the ID of the created
+// and stored agreement; parameters must contain a property for each placeholder to
+// be substituted in the template.
+//
+// ---
+// produces:
+// - application/json
+// consumes:
+// - application/json
+// parameters:
+// - name: createAgreement
+//   in: body
+//   description: Parameters to create an agreement from a template
+//   required: true
+//   schema:
+//     "$ref": "#/definitions/CreateAgreement"
+// responses:
+//   '200':
+//     description: The response contains the ID of the created agreement
+//     schema:
+//       "$ref": "#/definitions/CreateAgreement"
+//   '400' :
+//     description: Not all template placeholders were substituted
+//   '404' :
+//     description: Not found the TemplateID to create the agreement from
+func (a *App) Mf2cCreateAgreementFromTemplate(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * No additional requirements yet
+	 */
+	a.CreateAgreementFromTemplate(w, r)
 }
 
 func manageError(err error, w http.ResponseWriter) {

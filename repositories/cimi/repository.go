@@ -55,7 +55,7 @@ const (
 	pwdProp    = "cimipwd"
 	defaultPwd = "testpassword"
 
-	insecureProp    = "cimiinsecure"
+	InsecureProp    = "cimiinsecure"
 	defaultInsecure = false
 
 	failfastProp    = "cimifailfast"
@@ -81,12 +81,13 @@ const (
 
 // Repository implements the model.Repository interface for a CIMI repository.
 type Repository struct {
-	baseurl  string
-	client   *http.Client
-	username string
-	password string
-	failfast bool
-	logged   bool
+	baseurl   string
+	client    *http.Client
+	username  string
+	password  string
+	failfast  bool
+	logged    bool
+	providers map[string]model.Provider // Not CIMI supported; added just for testing
 }
 
 // New creates a Repository according to a configuration, establishing the connection
@@ -121,7 +122,7 @@ func New(config *viper.Viper) (Repository, error) {
 	baseurl := config.GetString(urlProp)
 	username := config.GetString(userProp)
 	password := config.GetString(pwdProp)
-	insecure := config.GetBool(insecureProp)
+	insecure := config.GetBool(InsecureProp)
 	failfast := config.GetBool(failfastProp)
 
 	client, err := getClient(repo.baseurl, insecure)
@@ -137,6 +138,7 @@ func New(config *viper.Viper) (Repository, error) {
 			repo.logged = true
 		}
 	}
+	repo.providers = make(map[string]model.Provider)
 
 	return *repo, err
 }
@@ -156,7 +158,7 @@ func logConfig(config *viper.Viper) {
 		"\tfailfast: %v\n",
 		config.GetString(urlProp),
 		config.GetString(userProp),
-		config.GetBool(insecureProp),
+		config.GetBool(InsecureProp),
 		config.GetBool(failfastProp))
 }
 
@@ -365,22 +367,58 @@ func (r Repository) getUserProfiles() ([]userProfile, error) {
 
 // GetAllProviders (see model.Repository)
 func (r Repository) GetAllProviders() (model.Providers, error) {
-	return nil, errors.New("Not implemented")
+	result := make(model.Providers, 0, len(r.providers))
+
+	for _, value := range r.providers {
+		result = append(result, value)
+	}
+	return result, nil
 }
 
 // GetProvider (see model.Repository)
 func (r Repository) GetProvider(id string) (*model.Provider, error) {
-	return nil, errors.New("Not implemented")
+	var err error
+
+	item, ok := r.providers[id]
+
+	if ok {
+		err = nil
+	} else {
+		err = model.ErrNotFound
+	}
+	return &item, err
 }
 
 // CreateProvider (see model.Repository)
 func (r Repository) CreateProvider(provider *model.Provider) (*model.Provider, error) {
-	return nil, errors.New("Not implemented")
+	var err error
+
+	id := provider.Id
+	_, ok := r.providers[id]
+
+	if ok {
+		err = model.ErrAlreadyExist
+	} else {
+		r.providers[id] = *provider
+		err = nil
+	}
+	return provider, err
 }
 
 // DeleteProvider (see model.Repository)
 func (r Repository) DeleteProvider(provider *model.Provider) error {
-	return errors.New("Not implemented")
+	var err error
+
+	id := provider.Id
+
+	_, ok := r.providers[id]
+	if ok {
+		delete(r.providers, id)
+		err = nil
+	} else {
+		err = model.ErrNotFound
+	}
+	return err
 }
 
 // GetAllAgreements (see model.Repository)

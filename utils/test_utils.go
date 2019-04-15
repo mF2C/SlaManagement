@@ -21,6 +21,7 @@ package utils
 
 import (
 	"SLALite/model"
+	"SLALite/repositories/cimi"
 	"SLALite/repositories/memrepository"
 	"SLALite/repositories/mongodb"
 	"SLALite/repositories/validation"
@@ -29,6 +30,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // CreateTestRepository creates a repository according to the SLA_REPOSITORY env var.
@@ -57,6 +59,16 @@ func createRepository(repoType string) model.IRepository {
 			log.Fatal("Error creating mongo repository: ", errMongo.Error())
 		}
 		repo = mongoRepo
+	case cimi.Name:
+		config := viper.New()
+		config.SetEnvPrefix(ConfigPrefix) // Env vars start with 'SLA_'
+		config.Set(cimi.InsecureProp, true)
+		config.AutomaticEnv()
+		cimirepo, errCimi := cimi.New(config)
+		if errCimi != nil {
+			log.Fatal("Error creating CIMI repository: ", errCimi.Error())
+		}
+		repo = cimirepo
 	}
 	repo, _ = validation.New(repo, model.NewDefaultValidator(false, true))
 	return repo

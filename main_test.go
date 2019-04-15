@@ -17,6 +17,7 @@ package main
 
 import (
 	"SLALite/model"
+	"SLALite/repositories/cimi"
 	"SLALite/utils"
 	"bytes"
 	"encoding/json"
@@ -66,7 +67,8 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			log.Fatalf("Error creating initial state: %v", err)
 		}
-		a, _ = NewApp(viper.New(), repo, model.NewDefaultValidator(false, true))
+		_, externalIds := repo.(cimi.Repository)
+		a, _ = NewApp(viper.New(), repo, model.NewDefaultValidator(externalIds, true))
 	} else {
 		log.Fatal("Error initializing repository")
 	}
@@ -798,6 +800,7 @@ func getProviderId(i int) string {
 }
 
 func createAgreement(aid string, provider model.Provider, client model.Client, name string, expiration *time.Time) model.Agreement {
+	var exp = time.Now().AddDate(1, 0, 0)
 	return model.Agreement{
 		Id:    aid,
 		Name:  name,
@@ -808,7 +811,7 @@ func createAgreement(aid string, provider model.Provider, client model.Client, n
 			Type:     model.AGREEMENT,
 			Provider: provider, Client: client,
 			Creation:   time.Now(),
-			Expiration: expiration,
+			Expiration: &exp,
 			Guarantees: []model.Guarantee{
 				model.Guarantee{Name: "TestGuarantee", Constraint: "test_value > 10"},
 			},

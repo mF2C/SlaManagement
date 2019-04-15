@@ -8,8 +8,8 @@
         "name": "{{.agreementname}}",
         "provider": { "id": "{{.provider.id}}", "name": "{{.provider.name}}" },
         "client": { "id": "{{.client.Id}}", "name": "{{.client.Name}}" },
-        "creation": "2018-01-16T17:09:45.0Z",
-        "expiration": "2019-01-17T17:09:45.0Z",
+        "creation": "2018-01-16T17:09:45.01Z",
+        "expiration": "2019-01-17T17:09:45.01Z",
         "guarantees": [
             {
                 "name": "TestGuarantee",
