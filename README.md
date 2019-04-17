@@ -107,7 +107,7 @@ Usage of SLALite:
 
 *MF2C settings*
 
-* `policies` (default: `https://localhost:46050/api`). Sets the location of the Policies component.
+* `policies` (default: `https://localhost:46050/api/v2`). Sets the root location of the Policies component API.
 * `isleader` (default: ""). If not empty, this setting, interpreted as a boolean, is used to check if the SLALite is running on a leader or not.
 
 #### Env vars  ####

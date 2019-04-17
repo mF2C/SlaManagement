@@ -29,12 +29,12 @@ import (
 
 const (
 	urlProp           = "policies"
-	defaultURL string = "https://localhost:46050/api"
+	defaultURL string = "https://localhost:46050/api/v2"
 
 	// IsLeaderProp is the env var name that contains the value to build the PoliciesMock
 	isLeaderProp = "isleader"
 
-	pathIsLeader = "v1/resource-management/policies/leaderinfo"
+	pathIsLeader = "resource-management/policies/leaderinfo"
 )
 
 // PoliciesConnecter defines the methods that a connector to the Policies component
