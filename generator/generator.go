@@ -173,6 +173,8 @@ func Do(genmodel *Model, val model.Validator, externalIDs bool) (*model.Agreemen
 	agreement.Details.Id = uuid.New().String()
 	if !externalIDs {
 		agreement.Id = agreement.Details.Id
+	} else {
+		agreement.Id = ""
 	}
 	agreement.Details.Creation = time.Now()
 	agreement.Name = agreement.Details.Name
