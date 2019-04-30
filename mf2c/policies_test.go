@@ -17,58 +17,99 @@ limitations under the License.
 /*
 This tests access to Policies component.
 
-To run this test, set up a policies component and set env var SLA_POLICIES=<url>
-(e.g. SLA_POLICIES=https://localhost:46050/api)
+To run the integration test, set up a policies component and set env var SLA_POLICIES=<url>
+(e.g. SLA_POLICIES=https://localhost:46050/api/v2
 */
 
 package mf2c
 
 import (
-	"SLALite/utils"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
-
-	"github.com/spf13/viper"
 
 	log "github.com/sirupsen/logrus"
 )
 
-var policies Policies
+var policiesSrv *httptest.Server
 
-func TestMain(m *testing.M) {
+func TestIntegrationPolicies(t *testing.T) {
 	var err error
+	var policies *Policies
 	var ok bool
 	var policiesURL string
-	result := -1
 
 	if policiesURL, ok = os.LookupEnv("SLA_POLICIES"); !ok {
-		log.Info("Skipping Policies integration test")
-		os.Exit(0)
+		t.Skip("Skipping Policies integration test")
 	}
 
-	if policies, err = createPolicies(policiesURL); err != nil {
-		log.Fatalf("Error creating repository: %s", err.Error())
+	if policies, err = NewPolicies(policiesURL); err != nil {
+		log.Fatalf("Error creating Policies client: %s", err.Error())
 	}
 
-	result = m.Run()
-
-	os.Exit(result)
-}
-
-func createPolicies(policiesURL string) (Policies, error) {
-
-	config := viper.New()
-	config.SetEnvPrefix(utils.ConfigPrefix) // Env vars start with 'SLA_'
-	config.Set(policiesURLProp, policiesURL)
-	config.AutomaticEnv()
-	policies, err := NewPoliciesClient(config)
-	return *policies, err
-}
-
-func TestIsLeader(t *testing.T) {
 	result, err := policies.IsLeader()
 	if err != nil {
 		t.Errorf("Error getting leader: %#v", err)
 	}
 	log.Debugf("Policies.IsLeader = %v", result)
+}
+
+func TestPoliciesMock(t *testing.T) {
+	expected := true
+	policies := NewPoliciesMock(expected)
+	actual, _ := policies.IsLeader()
+
+	if expected != actual {
+		t.Errorf("TestPoliciesMock. Expected:%v. Actual:%v", expected, actual)
+	}
+}
+
+func TestPolicies(t *testing.T) {
+
+	/* create mock server */
+	policiesSrv = httptest.NewServer(http.HandlerFunc(handler))
+	defer policiesSrv.Close()
+
+	t.Run("IsLeader", testIsLeader)
+}
+
+func testIsLeader(t *testing.T) {
+	var actual bool
+	var err error
+	var policies *Policies
+
+	policies, err = NewPolicies(policiesSrv.URL + "/" + pathAPI)
+	if err == nil {
+		actual, err = policies.IsLeader()
+	}
+	if err != nil {
+		t.Errorf("testIsLeader. Unexpected error: %s", err.Error())
+		return
+	}
+	if !actual {
+		t.Errorf("testIsLeader. Expected:%v. Actual:%v", true, actual)
+	}
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.EscapedPath() {
+	case "/" + pathAPI + "/" + pathIsLeader:
+		var data isLeader
+		f, err := os.Open("testdata/isleader.json")
+		defer f.Close()
+		json.NewDecoder(f).Decode(&data)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		enc := json.NewEncoder(w)
+		enc.Encode(data)
+	default:
+		w.WriteHeader(http.StatusNotFound)
+	}
 }

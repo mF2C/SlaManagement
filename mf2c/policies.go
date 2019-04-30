@@ -14,22 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package mf2c contains code to connect to rest of components of the mF2C stack
 package mf2c
 
 import (
 	"SLALite/utils/rest"
-	"errors"
-
-	"github.com/spf13/viper"
+	"net/url"
 )
 
 const (
-	policiesURLProp           = "policies"
-	policiesDefaultURL string = "https://localhost:46050/api/v2"
-
-	// IsLeaderProp is the env var name that contains the value to build the PoliciesMock
-	isLeaderProp = "isleader"
+	pathAPI            = "api/v2"
+	policiesDefaultURL = "https://localhost:46050" + "/" + pathAPI
 
 	pathIsLeader = "resource-management/policies/leaderinfo"
 )
@@ -56,17 +50,17 @@ type isLeader struct {
 	ImLeader bool `json:"imLeader"`
 }
 
-// NewPolicies is a facade that uses the 'isLeaderProp' configuration
-// parameter to return a Policies client or a PoliciesMock
-func NewPolicies(config *viper.Viper) (PoliciesConnecter, error) {
-	if config == nil {
-		return nil, errors.New("Must provide config to mf2c.policies.NewPolicies()")
-	}
+// NewPolicies returns a Policies component client
+func NewPolicies(baseurl string) (*Policies, error) {
 
-	if config.GetString(isLeaderProp) != "" {
-		return NewPoliciesMock(config.GetBool(isLeaderProp)), nil
+	url, err := url.Parse(baseurl)
+	if err != nil {
+		return nil, err
 	}
-	return NewPoliciesClient(config)
+	policies := Policies{
+		client: rest.New(url, nil),
+	}
+	return &policies, nil
 }
 
 // NewPoliciesMock constructs a new PoliciesConnector that returns the values
