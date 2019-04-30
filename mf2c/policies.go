@@ -20,16 +20,13 @@ package mf2c
 import (
 	"SLALite/utils/rest"
 	"errors"
-	"fmt"
-	"log"
-	"net/url"
 
 	"github.com/spf13/viper"
 )
 
 const (
-	urlProp           = "policies"
-	defaultURL string = "https://localhost:46050/api/v2"
+	policiesURLProp           = "policies"
+	policiesDefaultURL string = "https://localhost:46050/api/v2"
 
 	// IsLeaderProp is the env var name that contains the value to build the PoliciesMock
 	isLeaderProp = "isleader"
@@ -65,28 +62,11 @@ func NewPolicies(config *viper.Viper) (PoliciesConnecter, error) {
 	if config == nil {
 		return nil, errors.New("Must provide config to mf2c.policies.NewPolicies()")
 	}
-	setDefaults(config)
-	logConfig(config)
 
 	if config.GetString(isLeaderProp) != "" {
 		return NewPoliciesMock(config.GetBool(isLeaderProp)), nil
 	}
 	return NewPoliciesClient(config)
-}
-
-// NewPoliciesClient returns a Policies component client
-func NewPoliciesClient(config *viper.Viper) (*Policies, error) {
-
-	baseurl := config.GetString(urlProp)
-
-	url, err := url.Parse(baseurl)
-	if err != nil {
-		return nil, err
-	}
-	policies := Policies{
-		client: rest.New(url, nil),
-	}
-	return &policies, nil
 }
 
 // NewPoliciesMock constructs a new PoliciesConnector that returns the values
@@ -96,23 +76,6 @@ func NewPoliciesMock(isLeader bool) PoliciesConnecter {
 	return PoliciesMock{
 		isLeader: isLeader,
 	}
-}
-
-func setDefaults(config *viper.Viper) {
-	config.SetDefault(urlProp, defaultURL)
-}
-
-func logConfig(config *viper.Viper) {
-	leader := ""
-
-	if config.GetString(isLeaderProp) != "" {
-		leader = fmt.Sprint(config.GetBool(isLeaderProp))
-	}
-	log.Printf("Policies configuration\n"+
-		"\tisLeader: %v\n"+
-		"\tURL: %v\n",
-		leader,
-		config.GetString(urlProp))
 }
 
 // IsLeader returns if the current agent is leader or not

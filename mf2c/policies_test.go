@@ -59,7 +59,7 @@ func createPolicies(policiesURL string) (Policies, error) {
 
 	config := viper.New()
 	config.SetEnvPrefix(utils.ConfigPrefix) // Env vars start with 'SLA_'
-	config.Set(urlProp, policiesURL)
+	config.Set(policiesURLProp, policiesURL)
 	config.AutomaticEnv()
 	policies, err := NewPoliciesClient(config)
 	return *policies, err
