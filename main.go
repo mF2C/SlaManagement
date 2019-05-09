@@ -83,8 +83,10 @@ func main() {
 		log.Fatal("Error creating repository: ", errRepo.Error())
 	}
 
+	var mF2C mf2c.Mf2c
 	var err error
-	policies, err = mf2c.NewPolicies(config)
+	mF2C, err = mf2c.New(config)
+	policies = mF2C.Policies
 	if err != nil {
 		log.Fatal("Error creating Policies: ", err.Error())
 	}

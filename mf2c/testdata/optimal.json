@@ -1,0 +1,16 @@
+[
+    {
+        "ipaddress": "172.28.0.20",
+        "mf2c_device_id": "52523f94-f454-4d3c-97b7-486c7f74e176",
+        "network utilization": 0.0,
+        "compute saturation": 0.0,
+        "node_name": "mf2c-leader",
+        "disk utilization": 0.0,
+        "compute utilization": 0.0,
+        "memory saturation": 0.0,
+        "type": "machine",
+        "memory utilization": 0.0,
+        "network saturation": 0.0,
+        "disk saturation": 0.0
+    }
+]
