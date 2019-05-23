@@ -26,7 +26,6 @@ package cimi
 import (
 	"SLALite/model"
 	"SLALite/repositories"
-	"SLALite/utils"
 	"os"
 	"testing"
 
@@ -64,8 +63,8 @@ func TestMain(m *testing.M) {
 func createRepository() (model.IRepository, error) {
 
 	config := viper.New()
-	config.SetEnvPrefix(utils.ConfigPrefix) // Env vars start with 'SLA_'
-	config.Set(insecureProp, true)
+	config.SetEnvPrefix("SLA") // Env vars start with 'SLA_'
+	config.Set(InsecureProp, true)
 	config.AutomaticEnv()
 	repo, err := New(config)
 	return repo, err
@@ -74,19 +73,19 @@ func createRepository() (model.IRepository, error) {
 func loadSamples() {
 	var err error
 
-	repositories.Data.A01, err = utils.ReadAgreement("testdata/a01.json")
+	repositories.Data.A01, err = model.ReadAgreement("testdata/a01.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	repositories.Data.A02, err = utils.ReadAgreement("testdata/a02.json")
+	repositories.Data.A02, err = model.ReadAgreement("testdata/a02.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	repositories.Data.A03, err = utils.ReadAgreement("testdata/a03.json")
+	repositories.Data.A03, err = model.ReadAgreement("testdata/a03.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	repositories.Data.T01, err = utils.ReadTemplate("testdata/t01.json")
+	repositories.Data.T01, err = model.ReadTemplate("testdata/t01.json")
 	if err != nil {
 		log.Fatal(err)
 	}
