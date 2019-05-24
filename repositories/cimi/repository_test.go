@@ -121,11 +121,9 @@ func TestRepository(t *testing.T) {
 	// Commented out until CIMI is fixed t.Run("DeleteAgreementNotExists", ctx.TestDeleteAgreementNotExists)
 
 	/* Violations */
-	/* Commented out until CIMI is fixed
 	t.Run("CreateViolation", ctx.TestCreateViolation)
 	// N/A in CIMI t.Run("CreateViolationExists", ctx.TestCreateViolationExists)
 	t.Run("GetViolation", ctx.TestGetViolation)
-	*/
 	t.Run("GetViolationNotExists", ctx.TestGetViolationNotExists)
 
 	/* Templates */
