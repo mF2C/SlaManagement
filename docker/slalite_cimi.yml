@@ -7,5 +7,6 @@ cimiinsecure: true
 cimiurl: https://proxy:443/api
 
 policies: http://policies:46050/api/v2
+analytics: http://analytics-engine:46020
 
 port: 46030
