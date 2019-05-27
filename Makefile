@@ -31,6 +31,10 @@ release_minor:
 release_major:
 	resources/bin/release.sh major
 
+release: clean test apigen
+	resources/bin/xrelease.sh
+	resources/bin/make_docker.sh ${IMAGE}
+
 clean:
 	go clean
 	go clean -cache
@@ -38,5 +42,12 @@ clean:
 
 apigen:
 	swagger generate spec -m -o resources/swagger.json
+
+a:
+	echo A
+	make b
+
+b:
+	echo B
 
 .PHONY: build run docker release_patch release_minor release_major clean
