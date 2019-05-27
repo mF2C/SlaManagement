@@ -233,6 +233,43 @@
         }
       }
     },
+    "/mf2c/create-agreement": {
+      "post": {
+        "description": "Creates an agreement from a template; templateId is the templateID to base the\nagreement from; agreementID is an output field, containing the ID of the created\nand stored agreement; parameters must contain a property for each placeholder to\nbe substituted in the template.",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "mf2cCreateAgreementFromTemplate",
+        "parameters": [
+          {
+            "description": "Parameters to create an agreement from a template",
+            "name": "createAgreement",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateAgreement"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The response contains the ID of the created agreement",
+            "schema": {
+              "$ref": "#/definitions/CreateAgreement"
+            }
+          },
+          "400": {
+            "description": "Not all template placeholders were substituted"
+          },
+          "404": {
+            "description": "Not found the TemplateID to create the agreement from"
+          }
+        }
+      }
+    },
     "/providers": {
       "get": {
         "description": "Returns all registered providers",
@@ -686,13 +723,6 @@
       "type": "object",
       "title": "Template is the entity that serves as base to create new agreements",
       "properties": {
-        "constraints": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "x-go-name": "Constraints"
-        },
         "details": {
           "$ref": "#/definitions/Details"
         },
@@ -703,6 +733,9 @@
         "name": {
           "type": "string",
           "x-go-name": "Name"
+        },
+        "state": {
+          "$ref": "#/definitions/State"
         }
       },
       "x-go-package": "SLALite/model"
