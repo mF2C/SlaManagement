@@ -26,15 +26,18 @@ package cimi
 import (
 	"SLALite/model"
 	"SLALite/repositories"
+	"bytes"
 	"os"
+	"runtime/debug"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 
 	log "github.com/sirupsen/logrus"
 )
 
-var repo model.IRepository
+var repo Repository
 
 func TestMain(m *testing.M) {
 	var err error
@@ -60,7 +63,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func createRepository() (model.IRepository, error) {
+func createRepository() (Repository, error) {
 
 	config := viper.New()
 	config.SetEnvPrefix("SLA") // Env vars start with 'SLA_'
@@ -136,4 +139,47 @@ func TestRepository(t *testing.T) {
 	//
 	// TODO tests on ServiceOperationReport and ServiceInstance
 	//
+}
+
+func TestCreateServiceContainerMetric(t *testing.T) {
+	var scm *ServiceContainerMetric
+	var err error
+
+	scm = &ServiceContainerMetric{
+		Device:    Href{Href: "device"},
+		Container: "a-container-id",
+		StartTime: time.Now(),
+		StopTime:  time.Now(),
+	}
+	scm, err = repo.CreateServiceContainerMetric(scm)
+	assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
+	if scm == nil {
+		t.Error("Unexpected scm=nil")
+	}
+	if scm.Id == "" {
+		t.Error("Unexpected scm.Id in (nil, \"\")")
+	}
+}
+
+func TestGetServiceContainerMetrics(t *testing.T) {
+	now := time.Now()
+	ago := now.Add(-time.Minute)
+
+	_, err := repo.GetServiceContainerMetrics("", "", nil, nil)
+	assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
+
+	/*
+	 * Set all parameters and check the query is well formed if no error is returned
+	 */
+	_, err = repo.GetServiceContainerMetrics("a-device", "a-container", &ago, &now)
+	assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
+}
+
+func assertEquals(t *testing.T, msg string, expected interface{}, actual interface{}) {
+	if expected != actual {
+		buf := bytes.Buffer{}
+		buf.Write(debug.Stack())
+		t.Errorf(msg+"\n%s", expected, actual, buf.String())
+
+	}
 }

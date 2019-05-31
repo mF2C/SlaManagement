@@ -70,6 +70,7 @@ const (
 	pathViolations       path = "sla-violation"
 	pathUserProfiles     path = "user-profile"
 	pathServiceInstances path = "service-instance"
+	pathContainerMetric  path = "service-container-metric"
 
 	authHeader = "slipstream-authn-info"
 
@@ -647,6 +648,52 @@ func (r Repository) GetServiceInstancesByAgreement(aID string) ([]ServiceInstanc
 	filter := fmt.Sprintf("agreement=\"%s\"", aID)
 	err := r.get(pathServiceInstances, filter, target)
 	return target.ServiceInstances, err
+}
+
+// CreateServiceContainerMetric creates a ServiceContainerMetric
+func (r Repository) CreateServiceContainerMetric(e *ServiceContainerMetric) (*ServiceContainerMetric, error) {
+
+	var acl = r.getACL()
+
+	e.ACL = acl
+	newID, err := r.post(pathContainerMetric, e)
+	if err != nil {
+		return nil, err
+	}
+	e.Id = newID
+	return e, err
+}
+
+// DeleteServiceContainerMetric deletes a ServiceContainerMetric
+func (r Repository) DeleteServiceContainerMetric(e *ServiceContainerMetric) error {
+	subpath := r.subpath(pathContainerMetric, e.Id)
+	err := r.delete(subpath)
+
+	return err
+}
+
+// GetServiceContainerMetrics queries ServiceContainerMetric
+func (r Repository) GetServiceContainerMetrics(
+	device string, container string, startTime *time.Time, stopTime *time.Time) ([]ServiceContainerMetric, error) {
+
+	var parts = make([]string, 0, 4)
+	if device != "" {
+		parts = append(parts, fmt.Sprintf("(device_id/href=\"%s\")", device))
+	}
+	if container != "" {
+		parts = append(parts, fmt.Sprintf("(container_id=\"%s\")", container))
+	}
+	if startTime != nil {
+		parts = append(parts, fmt.Sprintf("(start_time>\"%s\")", startTime.UTC().Format(time.RFC3339)))
+	}
+	if stopTime != nil {
+		parts = append(parts, fmt.Sprintf("(stop_time<\"%s\")", stopTime.UTC().Format(time.RFC3339)))
+	}
+	filter := strings.Join(parts, "and")
+	target := new(serviceContainerMetricCollection)
+	err := r.get(pathContainerMetric, filter, target)
+
+	return target.ServiceContainerMetrics, err
 }
 
 func (r *Repository) getACL() ACL {

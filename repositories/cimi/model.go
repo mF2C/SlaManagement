@@ -106,6 +106,26 @@ type serviceOperationReportCollection struct {
 	ServiceOperationReports []ServiceOperationReport `json:"serviceOperationReports"`
 }
 
+// ServiceContainerMetric stores start and stop times of containers running on a device
+type ServiceContainerMetric struct {
+	Id        string    `json:"id"`
+	Device    Href      `json:"device_id"`
+	Container string    `json:"container_id"`
+	StartTime time.Time `json:"start_time"`
+	StopTime  time.Time `json:"stop_time"`
+	ACL       ACL       `json:"acl"`
+}
+
+// GetId implements model.Identity
+func (scm *ServiceContainerMetric) GetId() string {
+	return scm.Id
+}
+
+type serviceContainerMetricCollection struct {
+	Count                   int                      `json:"count"`
+	ServiceContainerMetrics []ServiceContainerMetric `json:"serviceContainerMetrics"`
+}
+
 // ServiceInstance is the entity that represents the execution of a service
 type ServiceInstance struct {
 	Id        string      `json:"id"`
