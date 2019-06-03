@@ -43,11 +43,4 @@ clean:
 apigen:
 	swagger generate spec -m -o resources/swagger.json
 
-a:
-	echo A
-	make b
-
-b:
-	echo B
-
 .PHONY: build run docker release_patch release_minor release_major clean

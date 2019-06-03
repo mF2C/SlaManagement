@@ -88,11 +88,16 @@ func (v *Violation) GetId() string {
 // ServiceOperationReport represents the execution time of a service operation in DER
 type ServiceOperationReport struct {
 	Id              string    `json:"id"`
-	ServiceInstance Href      `json:"serviceInstance"`
-	Operation       string    `json:"operation"`
+	ServiceInstance Href      `json:"requesting_application_id"`
+	Operation       string    `json:"operation_id"`
 	Created         time.Time `json:"created"`
 	Updated         time.Time `json:"updated"`
-	ExecutionTime   float64   `json:"execution_time"`
+	ExecutionTime   float64   `json:"execution_length"`
+	ComputeNodeID   string    `json:"compute_node_id"`
+	ExpectedEndTime time.Time `json:"expected_end_time"`
+	OperationName   string    `json:"operation_name"`
+	Result          string    `json:"result"`
+	StartTime       time.Time `json:"start_time"`
 	ACL             ACL       `json:"acl"`
 }
 
@@ -104,6 +109,26 @@ func (sor *ServiceOperationReport) GetId() string {
 type serviceOperationReportCollection struct {
 	Count                   int                      `json:"count"`
 	ServiceOperationReports []ServiceOperationReport `json:"serviceOperationReports"`
+}
+
+// ServiceContainerMetric stores start and stop times of containers running on a device
+type ServiceContainerMetric struct {
+	Id        string    `json:"id"`
+	Device    Href      `json:"device_id"`
+	Container string    `json:"container_id"`
+	StartTime time.Time `json:"start_time"`
+	StopTime  time.Time `json:"stop_time"`
+	ACL       ACL       `json:"acl"`
+}
+
+// GetId implements model.Identity
+func (scm *ServiceContainerMetric) GetId() string {
+	return scm.Id
+}
+
+type serviceContainerMetricCollection struct {
+	Count                   int                      `json:"count"`
+	ServiceContainerMetrics []ServiceContainerMetric `json:"serviceContainerMetrics"`
 }
 
 // ServiceInstance is the entity that represents the execution of a service
