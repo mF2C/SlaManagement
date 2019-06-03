@@ -637,7 +637,7 @@ func (r Repository) GetServiceOperationReportsByDate(serviceInstance string, fro
 
 	t := from.UTC().Format(time.RFC3339)
 	err := r.get(pathOperations,
-		fmt.Sprintf("(serviceInstance/href=\"%s\")and(created>\"%s\")", serviceInstance, t), target)
+		fmt.Sprintf("(requesting_application_id/href=\"%s\")and(created>\"%s\")", serviceInstance, t), target)
 	return target.ServiceOperationReports, err
 }
 

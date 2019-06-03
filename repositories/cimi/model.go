@@ -88,11 +88,16 @@ func (v *Violation) GetId() string {
 // ServiceOperationReport represents the execution time of a service operation in DER
 type ServiceOperationReport struct {
 	Id              string    `json:"id"`
-	ServiceInstance Href      `json:"serviceInstance"`
-	Operation       string    `json:"operation"`
+	ServiceInstance Href      `json:"requesting_application_id"`
+	Operation       string    `json:"operation_id"`
 	Created         time.Time `json:"created"`
 	Updated         time.Time `json:"updated"`
-	ExecutionTime   float64   `json:"execution_time"`
+	ExecutionTime   float64   `json:"execution_length"`
+	ComputeNodeID   string    `json:"compute_node_id"`
+	ExpectedEndTime time.Time `json:"expected_end_time"`
+	OperationName   string    `json:"operation_name"`
+	Result          string    `json:"result"`
+	StartTime       time.Time `json:"start_time"`
 	ACL             ACL       `json:"acl"`
 }
 
