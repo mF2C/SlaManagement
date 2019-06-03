@@ -141,6 +141,22 @@ func TestRepository(t *testing.T) {
 	//
 }
 
+func TestServiceOperationReports(t *testing.T) {
+	sor := &ServiceOperationReport{
+		Operation:       "op1",
+		ServiceInstance: Href{Href: "service-instance/5614321423"},
+		ExecutionTime:   1000,
+	}
+	sor, err := repo.CreateServiceOperationReport(sor)
+	assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
+
+	_, err = repo.GetServiceOperationReportsByDate("service-instance/5614321423", time.Now())
+	assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
+
+	err = repo.DeleteServiceOperationReport(sor)
+	assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
+}
+
 func TestCreateServiceContainerMetric(t *testing.T) {
 	var scm *ServiceContainerMetric
 	var err error

@@ -641,6 +641,14 @@ func (r Repository) GetServiceOperationReportsByDate(serviceInstance string, fro
 	return target.ServiceOperationReports, err
 }
 
+// DeleteServiceOperationReport deletes a ServiceOperationReport
+func (r Repository) DeleteServiceOperationReport(e *ServiceOperationReport) error {
+	subpath := r.subpath(pathOperations, e.Id)
+	err := r.delete(subpath)
+
+	return err
+}
+
 // GetServiceInstancesByAgreement returns the ServiceInstances with a given agreement id.
 func (r Repository) GetServiceInstancesByAgreement(aID string) ([]ServiceInstance, error) {
 	target := new(serviceInstanceCollection)
