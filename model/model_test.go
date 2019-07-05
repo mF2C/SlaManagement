@@ -322,6 +322,7 @@ func TestSerializeLastValues(t *testing.T) {
 		t.Errorf("Lastvalues section is not omitted. Marshalled agreement is %s", str)
 	}
 
+	a.Assessment = &Assessment{} // Needed in mf2c
 	ag := AssessmentGuarantee{
 		FirstExecution: time.Now(),
 		LastExecution:  time.Now(),

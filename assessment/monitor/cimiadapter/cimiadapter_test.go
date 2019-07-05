@@ -38,6 +38,7 @@ var tl = Timeline{
 type repository struct {
 	values           []cimi.ServiceOperationReport
 	serviceInstances []cimi.ServiceInstance
+	containerMetrics []cimi.ServiceContainerMetric
 }
 
 func (r repository) GetServiceOperationReportsByDate(serviceInstance string, from time.Time) ([]cimi.ServiceOperationReport, error) {
@@ -58,6 +59,10 @@ func (r repository) GetServiceInstancesByAgreement(aID string) ([]cimi.ServiceIn
 		}
 	}
 	return result, nil
+}
+
+func (r repository) GetServiceContainerMetrics(device string, container string, startTime time.Time, stopTime time.Time) ([]cimi.ServiceContainerMetric, error) {
+	return r.containerMetrics, nil
 }
 
 func TestMain(m *testing.M) {
@@ -100,11 +105,11 @@ func TestGetValues(t *testing.T) {
 	}
 	adapter := New(r)
 
-	adapter.Initialize(&a)
+	adapter = adapter.Initialize(&a)
 	gt := a.Details.Guarantees[0]
 
 	/* Two values should be provided */
-	values := adapter.GetValues(gt, []string{ExecTimeName}, time.Now())
+	values := adapter.GetValues(gt, []string{ExecTime}, time.Now())
 	if len(values) != 2 {
 		t.Errorf("Unexpected GetValues result: %v", values)
 	}
@@ -146,8 +151,51 @@ func initVars() (model.Agreement, repository, error) {
 				Agreement: a.Id,
 			},
 		},
+		[]cimi.ServiceContainerMetric{},
 	}
 	return a, r, nil
+}
+
+func TestGetAvailabilityValues(t *testing.T) {
+	a, err := readAgreement("testdata/b.json")
+	if err != nil {
+		t.Fatalf("Error loading agreement")
+	}
+	if v, _ := a.Details.GetVariable("availability"); v.Aggregation.Window != 600 {
+		t.Fatalf("Error in agreement schema")
+	}
+
+	si1 := "service-instance1"
+	r := repository{
+		[]cimi.ServiceOperationReport{},
+		[]cimi.ServiceInstance{
+			cimi.ServiceInstance{
+				Id:        si1,
+				Agreement: a.Id,
+				Agents: []cimi.Agent{
+					cimi.Agent{
+						ContainerID: "C01",
+					},
+				},
+			},
+		},
+		[]cimi.ServiceContainerMetric{
+			cimi.ServiceContainerMetric{
+				Id:        "C01",
+				StartTime: tstart,
+				StopTime:  &tend,
+			},
+		},
+	}
+	adapter := New(r)
+
+	adapter = adapter.Initialize(&a)
+	gt := a.Details.Guarantees[0]
+
+	values := adapter.GetValues(gt, []string{Availability}, time.Now())
+	if len(values) != 1 && d(values[0][Availability].Value.(float64), 100.0) > _MaxDelta {
+		t.Errorf("Error calculating availability. values = %v", values)
+	}
 }
 
 // Timeline calculates delta times from a time origin

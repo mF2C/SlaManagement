@@ -123,6 +123,7 @@ func TestGenericAdapter(t *testing.T) {
 		Process:  Aggregate,
 	}
 	a, _ := utils.ReadAgreement("testdata/a.json")
+	a.Assessment = &model.Assessment{} // needed in mf2c
 
 	ma := ga.Initialize(&a)
 	assessment.EvaluateAgreement(&a, ma, time.Now())
