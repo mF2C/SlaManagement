@@ -649,6 +649,19 @@ func (r Repository) DeleteServiceOperationReport(e *ServiceOperationReport) erro
 	return err
 }
 
+// CreateServiceInstance creates a ServiceInstance
+func (r Repository) CreateServiceInstance(si *ServiceInstance) (*ServiceInstance, error) {
+	var acl = r.getACL()
+	si.ACL = acl
+
+	newID, err := r.post(pathServiceInstances, si)
+	if err != nil {
+		return nil, err
+	}
+	si.Id = newID
+	return si, err
+}
+
 // GetServiceInstancesByAgreement returns the ServiceInstances with a given agreement id.
 func (r Repository) GetServiceInstancesByAgreement(aID string) ([]ServiceInstance, error) {
 	target := new(serviceInstanceCollection)

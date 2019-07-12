@@ -139,15 +139,20 @@ type serviceContainerMetricCollection struct {
 
 // ServiceInstance is the entity that represents the execution of a service
 type ServiceInstance struct {
-	Id        string    `json:"id"`
-	ACL       ACL       `json:"acl"`
-	User      string    `json:"user"`
-	Service   string    `json:"service"`
-	Agreement string    `json:"agreement"`
-	Status    string    `json:"status"`
-	Created   time.Time `json:"created"`
-	Updated   time.Time `json:"updated"`
-	Agents    []Agent   `json:"agents"`
+	Id             string    `json:"id"`
+	ACL            ACL       `json:"acl"`
+	User           string    `json:"user"`
+	DeviceID       string    `json:"device_id"`
+	DeviceIP       string    `json:"device_ip"`
+	ParentDeviceID string    `json:"parent_device_id"`
+	ParentDeviceIP string    `json:"parent_device_ip"`
+	Service        string    `json:"service"`
+	Agreement      string    `json:"agreement"`
+	Status         string    `json:"status"`
+	ServiceType    string    `json:"service_type"`
+	Created        time.Time `json:"created"`
+	Updated        time.Time `json:"updated"`
+	Agents         []Agent   `json:"agents"`
 }
 
 // Agent represents the list of agents running a service instance
@@ -158,7 +163,7 @@ type Agent struct {
 	Ports       interface{} `json:"ports"`
 	Status      string      `json:"status"`
 	ContainerID string      `json:"container_id"`
-	Allow       string      `json:"allow"`
+	Allow       bool        `json:"allow"`
 }
 
 // GetId implements model.Identity

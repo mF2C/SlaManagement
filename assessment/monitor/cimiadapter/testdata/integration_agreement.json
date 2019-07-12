@@ -1,0 +1,27 @@
+{
+    "name": "Integration-Test",
+    "state": "started",
+    "details":{
+        "id": "integration-test",
+        "type": "agreement",
+        "name": "Integration-Test",
+        "provider": { "id": "mf2c", "name": "mF2C Platform" },
+        "client": { "id": "c02", "name": "A client" },
+        "creation": "2019-01-16T17:09:45.01Z",
+        "variables": [
+            {
+                "name": "availability",
+                "aggregation": {
+                    "window": 600,
+                    "type": "average"
+                }
+            }
+        ],
+        "guarantees": [
+            {
+                "name": "availability",
+                "constraint": "availability > 90"
+            }
+        ]
+    }
+}
