@@ -63,7 +63,9 @@ func New(repo AdapterRepository) monitor.MonitoringAdapter {
 	}
 }
 
-func (ma *adapter) Initialize(a *model.Agreement) {
+func (ma *adapter) Initialize(a *model.Agreement) monitor.MonitoringAdapter {
+	result := *ma
+
 	var from time.Time
 	if a.Assessment == nil {
 		from = a.Details.Creation
@@ -76,19 +78,19 @@ func (ma *adapter) Initialize(a *model.Agreement) {
 		siReports, err := ma.repository.GetServiceOperationReportsByDate(si.Id, from)
 		if err != nil {
 			log.Printf("Error initializing adapter: %v", err)
-			return
+			return nil
 		}
 		reports = append(reports, siReports...)
 	}
 	if err != nil {
 		log.Printf("Error initializing adapter: %v", err)
-		return
+		return nil
 	}
 	log.Printf("cimiadapter.Initialize(): reports=%#v", reports)
 
-	ma.agreement = a
+	result.agreement = a
 
-	ma.metrics = make(map[operationName]assessment_model.GuaranteeData)
+	result.metrics = make(map[operationName]assessment_model.GuaranteeData)
 	for _, r := range reports {
 		mv := model.MetricValue{
 			Key:      ExecTimeName,
@@ -99,22 +101,23 @@ func (ma *adapter) Initialize(a *model.Agreement) {
 		data[mv.Key] = mv
 
 		var op = operationName(r.Operation)
-		if _, ok := ma.metrics[op]; !ok {
-			ma.metrics[op] = make(assessment_model.GuaranteeData, 0)
+		if _, ok := result.metrics[op]; !ok {
+			result.metrics[op] = make(assessment_model.GuaranteeData, 0)
 		}
-		ma.metrics[op] = append(ma.metrics[op], data)
+		result.metrics[op] = append(result.metrics[op], data)
 
 		//
 		// Manage catchall term
 		//
-		if _, ok := ma.metrics[catchAllName]; !ok {
-			ma.metrics[catchAllName] = make(assessment_model.GuaranteeData, 0)
+		if _, ok := result.metrics[catchAllName]; !ok {
+			result.metrics[catchAllName] = make(assessment_model.GuaranteeData, 0)
 		}
-		ma.metrics[catchAllName] = append(ma.metrics[catchAllName], data)
+		result.metrics[catchAllName] = append(result.metrics[catchAllName], data)
 	}
+	return &result
 }
 
-func (ma *adapter) GetValues(gt model.Guarantee, vars []string) assessment_model.GuaranteeData {
+func (ma *adapter) GetValues(gt model.Guarantee, vars []string, from time.Time) assessment_model.GuaranteeData {
 	// XXX We are assuming for IT-1 only one var per constraint
 
 	var op = operationName(gt.Name)

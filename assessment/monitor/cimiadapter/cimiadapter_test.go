@@ -74,20 +74,20 @@ func TestEvaluate(t *testing.T) {
 	}
 	adapter := New(r)
 
-	_, err = assessment.EvaluateAgreement(&a, adapter)
+	_, err = assessment.EvaluateAgreement(&a, adapter, time.Now())
 	var res amodel.Result
 	if err == nil {
 		a.Assessment = new(model.Assessment)
-		res, err = assessment.EvaluateAgreement(&a, adapter)
+		res, err = assessment.EvaluateAgreement(&a, adapter, time.Now())
 	}
 	if err != nil {
 		t.Errorf("Error evaluating agreement: %v", err)
 	}
 	// Check there one violation per GT
-	if nDijkstra := len(res[dijkstra].Violations); nDijkstra != 1 {
+	if nDijkstra := len(res.Violated[dijkstra].Violations); nDijkstra != 1 {
 		t.Errorf("Unexpected number of dijkstra violations. Expected: %d. Actual: %d", 1, nDijkstra)
 	}
-	if nAll := len(res[string(catchAllName)].Violations); nAll != 1 {
+	if nAll := len(res.Violated[string(catchAllName)].Violations); nAll != 1 {
 		t.Errorf("Unexpected number of * violations. Expected: %d. Actual: %d", 1, nAll)
 	}
 }
@@ -104,7 +104,7 @@ func TestGetValues(t *testing.T) {
 	gt := a.Details.Guarantees[0]
 
 	/* Two values should be provided */
-	values := adapter.GetValues(gt, []string{ExecTimeName})
+	values := adapter.GetValues(gt, []string{ExecTimeName}, time.Now())
 	if len(values) != 2 {
 		t.Errorf("Unexpected GetValues result: %v", values)
 	}
