@@ -21,6 +21,12 @@ import (
 	"time"
 )
 
+// Interval indicates an interval between two points of time
+type Interval struct {
+	Start time.Time
+	End   time.Time
+}
+
 // IRepository expose the interface to be fulfilled by implementations of CIMI repositories.
 type IRepository interface {
 	CreateViolation(v *model.Violation) (*model.Violation, error)
@@ -113,12 +119,12 @@ type serviceOperationReportCollection struct {
 
 // ServiceContainerMetric stores start and stop times of containers running on a device
 type ServiceContainerMetric struct {
-	Id        string    `json:"id"`
-	Device    Href      `json:"device_id"`
-	Container string    `json:"container_id"`
-	StartTime time.Time `json:"start_time"`
-	StopTime  time.Time `json:"stop_time"`
-	ACL       ACL       `json:"acl"`
+	Id        string     `json:"id"`
+	Device    Href       `json:"device_id"`
+	Container string     `json:"container_id"`
+	StartTime time.Time  `json:"start_time"`
+	StopTime  *time.Time `json:"stop_time,omitempty"`
+	ACL       ACL        `json:"acl"`
 }
 
 // GetId implements model.Identity
@@ -133,15 +139,31 @@ type serviceContainerMetricCollection struct {
 
 // ServiceInstance is the entity that represents the execution of a service
 type ServiceInstance struct {
-	Id        string      `json:"id"`
-	ACL       ACL         `json:"acl"`
-	User      string      `json:"user"`
-	Service   string      `json:"service"`
-	Agreement string      `json:"agreement"`
-	Status    string      `json:"status"`
-	Created   time.Time   `json:"created"`
-	Updated   time.Time   `json:"updated"`
-	Agents    interface{} `json:"agents"`
+	Id             string    `json:"id"`
+	ACL            ACL       `json:"acl"`
+	User           string    `json:"user"`
+	DeviceID       string    `json:"device_id"`
+	DeviceIP       string    `json:"device_ip"`
+	ParentDeviceID string    `json:"parent_device_id"`
+	ParentDeviceIP string    `json:"parent_device_ip"`
+	Service        string    `json:"service"`
+	Agreement      string    `json:"agreement"`
+	Status         string    `json:"status"`
+	ServiceType    string    `json:"service_type"`
+	Created        time.Time `json:"created"`
+	Updated        time.Time `json:"updated"`
+	Agents         []Agent   `json:"agents"`
+}
+
+// Agent represents the list of agents running a service instance
+type Agent struct {
+	AppType     string      `json:"app_type"`
+	URL         string      `json:"url"`
+	DeviceID    string      `json:"device_id"`
+	Ports       interface{} `json:"ports"`
+	Status      string      `json:"status"`
+	ContainerID string      `json:"container_id"`
+	Allow       bool        `json:"allow"`
 }
 
 // GetId implements model.Identity

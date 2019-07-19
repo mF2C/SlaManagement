@@ -1,0 +1,23 @@
+{
+    "user": "user/a-user-id",
+    "device_id": "device/a-device-id",
+    "device_ip": "127.0.0.1",
+    "parent_device_id": "device/a-device-id",
+    "parent_device_ip": "127.0.0.1",
+    "service": "service/a-service-id",
+    "agreement": "<to be changed>",
+    "status": "running",
+    "service_type": "docker",
+    "agents" : [
+        {
+            "url": "http://localhost",
+            "device_id": "<to be changed>",
+            "ports": [],
+            "status": "running",
+            "container_id": "<to be changed>",
+            "allow": true,
+            "app_type": "docker"
+        }
+    ]
+
+}

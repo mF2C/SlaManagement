@@ -1,0 +1,32 @@
+{
+    "name": "compss-hello-world",
+    "state": "started",
+    "details":{
+        "id": "compss-service-template",
+        "type": "template",
+        "name": "compss-hello-world",
+        "provider": { "id": "mf2c", "name": "mF2C Platform" },
+        "client": { "id": "client-id", "name": "client-name" },
+        "creation": "2018-01-16T17:09:45.01Z",
+        "variables": [
+            {
+                "name": "availability",
+                "aggregation": {
+                    "window": 600,
+                    "type": "average"
+                }
+            }
+        ],        
+        "guarantees": [
+            {
+                "name": "*",
+                "constraint": "execution_time < 10"
+            },
+            {
+                "name": "Guarantee2",
+                "constraint": "availability > 90"
+            }
+
+        ]
+    }
+}

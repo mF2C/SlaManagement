@@ -37,12 +37,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const _INF = -1
+
 var repo Repository
 
 func TestMain(m *testing.M) {
 	var err error
 	result := -1
 
+	log.SetLevel(log.InfoLevel)
 	if v, ok := os.LookupEnv("SLA_REPOSITORY"); !ok || v != Name {
 		log.Info("Skipping CIMI integration test")
 		os.Exit(0)
@@ -162,38 +165,73 @@ func TestServiceOperationReports(t *testing.T) {
 	assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
 }
 
-func TestCreateServiceContainerMetric(t *testing.T) {
+func TestServiceContainerMetric(t *testing.T) {
+	t.Run("Create service container metrics", testCreateServiceContainerMetric)
+	t.Run("Get service container metrics", testGetServiceContainerMetrics)
+}
+
+func testCreateServiceContainerMetric(t *testing.T) {
 	var scm *ServiceContainerMetric
 	var err error
 
-	scm = &ServiceContainerMetric{
-		Device:    Href{Href: "device"},
-		Container: "a-container-id",
-		StartTime: time.Now(),
-		StopTime:  time.Now(),
+	/*
+	 * Create a set of ServiceContainerMetric to later check the getSCM function.
+	 * Let's consider the interval for getSCM is (10, 20)
+	 */
+
+	minutes := [][2]int{
+		[2]int{5, 6},     // out of the interval
+		[2]int{5, 11},    // in
+		[2]int{5, 23},    // in
+		[2]int{5, _INF},  // in
+		[2]int{15, 19},   // in
+		[2]int{15, 21},   // in
+		[2]int{15, _INF}, // in
+		[2]int{21, 22},   // out
+		[2]int{22, _INF}, //out
 	}
-	scm, err = repo.CreateServiceContainerMetric(scm)
-	assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
-	if scm == nil {
-		t.Error("Unexpected scm=nil")
-	}
-	if scm.Id == "" {
-		t.Error("Unexpected scm.Id in (nil, \"\")")
+	for _, item := range minutes {
+		inp := newServiceContainerMetric(item[0], item[1])
+		scm, err = repo.CreateServiceContainerMetric(&inp)
+		assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
+		if scm == nil {
+			t.Fatal("Unexpected scm=nil")
+		}
+		if scm.Id == "" {
+			t.Fatal("Unexpected scm.Id in (nil, \"\")")
+		}
 	}
 }
 
-func TestGetServiceContainerMetrics(t *testing.T) {
-	now := time.Now()
-	ago := now.Add(-time.Minute)
+func testGetServiceContainerMetrics(t *testing.T) {
 
-	_, err := repo.GetServiceContainerMetrics("", "", nil, nil)
-	assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
+	begin := newDate(10)
+	end := newDate(20)
 
-	/*
-	 * Set all parameters and check the query is well formed if no error is returned
-	 */
-	_, err = repo.GetServiceContainerMetrics("a-device", "a-container", &ago, &now)
+	scms, err := repo.GetServiceContainerMetrics("device/a-device-id", "a-container-id", begin, end)
 	assertEquals(t, "Unexpected error. Expected: %v; Actual: %v", nil, err)
+	assertEquals(t, "Unexpected length of retrieved scms. Expected: %v; Actual: %v", 6, len(scms))
+}
+
+func newServiceContainerMetric(minuteBegin, minuteEnd int) ServiceContainerMetric {
+	begin := newDate(minuteBegin)
+
+	var pEnd *time.Time
+	if minuteEnd != _INF {
+		end := newDate(minuteEnd)
+		pEnd = &end
+	}
+
+	return ServiceContainerMetric{
+		Device:    Href{Href: "device/a-device-id"},
+		Container: "a-container-id",
+		StartTime: begin,
+		StopTime:  pEnd,
+	}
+}
+
+func newDate(minute int) time.Time {
+	return time.Date(2019, 1, 1, 0, minute, 0, 1, time.UTC)
 }
 
 func assertEquals(t *testing.T, msg string, expected interface{}, actual interface{}) {

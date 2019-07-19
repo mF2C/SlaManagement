@@ -649,6 +649,19 @@ func (r Repository) DeleteServiceOperationReport(e *ServiceOperationReport) erro
 	return err
 }
 
+// CreateServiceInstance creates a ServiceInstance
+func (r Repository) CreateServiceInstance(si *ServiceInstance) (*ServiceInstance, error) {
+	var acl = r.getACL()
+	si.ACL = acl
+
+	newID, err := r.post(pathServiceInstances, si)
+	if err != nil {
+		return nil, err
+	}
+	si.Id = newID
+	return si, err
+}
+
 // GetServiceInstancesByAgreement returns the ServiceInstances with a given agreement id.
 func (r Repository) GetServiceInstancesByAgreement(aID string) ([]ServiceInstance, error) {
 	target := new(serviceInstanceCollection)
@@ -680,9 +693,12 @@ func (r Repository) DeleteServiceContainerMetric(e *ServiceContainerMetric) erro
 	return err
 }
 
-// GetServiceContainerMetrics queries ServiceContainerMetric
+/*
+GetServiceContainerMetrics retrieves container metrics from specific device and container
+(if set) where the container is up within the interval (begin, end].
+*/
 func (r Repository) GetServiceContainerMetrics(
-	device string, container string, startTime *time.Time, stopTime *time.Time) ([]ServiceContainerMetric, error) {
+	device string, container string, begin time.Time, end time.Time) ([]ServiceContainerMetric, error) {
 
 	var parts = make([]string, 0, 4)
 	if device != "" {
@@ -691,12 +707,9 @@ func (r Repository) GetServiceContainerMetrics(
 	if container != "" {
 		parts = append(parts, fmt.Sprintf("(container_id=\"%s\")", container))
 	}
-	if startTime != nil {
-		parts = append(parts, fmt.Sprintf("(start_time>\"%s\")", startTime.UTC().Format(time.RFC3339)))
-	}
-	if stopTime != nil {
-		parts = append(parts, fmt.Sprintf("(stop_time<\"%s\")", stopTime.UTC().Format(time.RFC3339)))
-	}
+	parts = append(parts, fmt.Sprintf("(start_time<\"%s\")", end.UTC().Format(time.RFC3339)))
+	parts = append(parts, fmt.Sprintf("((stop_time=null)or(stop_time>\"%s\"))",
+		begin.UTC().Format(time.RFC3339)))
 	filter := strings.Join(parts, "and")
 	target := new(serviceContainerMetricCollection)
 	err := r.get(pathContainerMetric, filter, target)

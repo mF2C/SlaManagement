@@ -1,0 +1,28 @@
+{
+    "id": "b",
+    "name": "Agreement B",
+    "state": "started",
+    "details":{
+        "id": "b",
+        "type": "agreement",
+        "name": "Agreement B",
+        "provider": { "id": "mf2c", "name": "mF2C Platform" },
+        "client": { "id": "c02", "name": "A client" },
+        "creation": "2018-01-16T17:09:45.0Z",
+        "variables": [
+            {
+                "name": "availability",
+                "aggregation": {
+                    "window": 600,
+                    "type": "average"
+                }
+            }
+        ],
+        "guarantees": [
+            {
+                "name": "availability",
+                "constraint": "availability > 90"
+            }
+        ]
+    }
+}

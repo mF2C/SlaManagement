@@ -54,6 +54,11 @@ func (r mf2cTestRepo) GetServiceInstancesByAgreement(aID string) ([]cimi.Service
 	return nil, nil
 }
 
+func (r mf2cTestRepo) GetServiceContainerMetrics(device string, container string, begin time.Time, end time.Time) ([]cimi.ServiceContainerMetric, error) {
+	fmt.Println("GetServiceContainerMetrics")
+	return nil, nil
+}
+
 func TestIsNotLeader(t *testing.T) {
 	var policies = mf2c.NewPoliciesMock(false)
 	AssessMf2cAgreements(nil, nil, nil, policies)

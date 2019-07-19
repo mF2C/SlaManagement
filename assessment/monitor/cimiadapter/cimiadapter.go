@@ -24,13 +24,14 @@ import (
 	"SLALite/assessment/monitor"
 	"SLALite/model"
 	"SLALite/repositories/cimi"
-	"log"
 	"time"
 )
 
 const (
-	// ExecTimeName Name of execution time metric on mF2C
-	ExecTimeName = "execution_time"
+	// ExecTime is the name of execution time variable on mF2C
+	ExecTime = "execution_time"
+	// Availability is the name of the Availability variable on mF2C
+	Availability = "availability"
 
 	// catchAllName is the name of the CatchAll guarantee term (i.e., term that applies to operations)
 	catchAllName = operationName("*")
@@ -49,6 +50,7 @@ type adapter struct {
 type AdapterRepository interface {
 	GetServiceOperationReportsByDate(serviceInstance string, from time.Time) ([]cimi.ServiceOperationReport, error)
 	GetServiceInstancesByAgreement(aID string) ([]cimi.ServiceInstance, error)
+	GetServiceContainerMetrics(device string, container string, begin time.Time, end time.Time) ([]cimi.ServiceContainerMetric, error)
 }
 
 // New returns a CIMI monitoring adapter
@@ -63,60 +65,137 @@ func New(repo AdapterRepository) monitor.MonitoringAdapter {
 	}
 }
 
-func (ma *adapter) Initialize(a *model.Agreement) {
-	var from time.Time
-	if a.Assessment == nil {
-		from = a.Details.Creation
-	} else {
-		from = a.Assessment.LastExecution
+func (ma *adapter) Initialize(a *model.Agreement) monitor.MonitoringAdapter {
+	result := *ma
+	result.agreement = a
+
+	return &result
+}
+
+func (ma *adapter) GetValues(gt model.Guarantee, vars []string, to time.Time) assessment_model.GuaranteeData {
+	a := ma.agreement
+
+	var defaultFrom = getDefaultFrom(a, gt)
+
+	values := map[string][]model.MetricValue{}
+	for _, name := range vars {
+		v, _ := a.Details.GetVariable(name)
+		from := getFromForVariable(v, defaultFrom, to)
+		if name == ExecTime {
+			values[ExecTime] = ma.retrieveExecTime(gt, from)
+		} else {
+			values[Availability] = ma.retrieveAvailability(gt, from, to)
+		}
 	}
-	sis, err := ma.repository.GetServiceInstancesByAgreement(a.Id)
+	result := buildExpressionData(values)
+	return result
+}
+
+func buildExpressionData(valuesmap map[string][]model.MetricValue) assessment_model.GuaranteeData {
+
+	/* XXX: Assume just one variable for the moment */
+	result := assessment_model.GuaranteeData{}
+	for key, values := range valuesmap {
+
+		for _, value := range values {
+			item := assessment_model.ExpressionData{
+				key: value,
+			}
+			result = append(result, item)
+		}
+		return result /* second and onwards will be skipped */
+	}
+	return result
+}
+
+func (ma *adapter) retrieveExecTime(gt model.Guarantee, from time.Time) []model.MetricValue {
+	a := ma.agreement
+
+	result := []model.MetricValue{}
+
 	reports := make([]cimi.ServiceOperationReport, 0, 5)
+	sis, err := ma.repository.GetServiceInstancesByAgreement(a.Id)
+	if err != nil {
+		return nil
+	}
 	for _, si := range sis {
 		siReports, err := ma.repository.GetServiceOperationReportsByDate(si.Id, from)
 		if err != nil {
-			log.Printf("Error initializing adapter: %v", err)
-			return
+			return nil
 		}
 		reports = append(reports, siReports...)
 	}
-	if err != nil {
-		log.Printf("Error initializing adapter: %v", err)
-		return
-	}
-	log.Printf("cimiadapter.Initialize(): reports=%#v", reports)
 
-	ma.agreement = a
-
-	ma.metrics = make(map[operationName]assessment_model.GuaranteeData)
 	for _, r := range reports {
+
+		if r.Operation != gt.Name && operationName(gt.Name) != catchAllName {
+			continue
+		}
 		mv := model.MetricValue{
-			Key:      ExecTimeName,
+			Key:      ExecTime,
 			Value:    r.ExecutionTime,
 			DateTime: r.Created,
 		}
-		data := make(assessment_model.ExpressionData)
-		data[mv.Key] = mv
+		result = append(result, mv)
+	}
+	return result
+}
 
-		var op = operationName(r.Operation)
-		if _, ok := ma.metrics[op]; !ok {
-			ma.metrics[op] = make(assessment_model.GuaranteeData, 0)
-		}
-		ma.metrics[op] = append(ma.metrics[op], data)
+func (ma *adapter) retrieveAvailability(gt model.Guarantee, from, to time.Time) []model.MetricValue {
+	sis, err := ma.repository.GetServiceInstancesByAgreement(ma.agreement.Id)
+	if err != nil {
+		return nil
+	}
 
-		//
-		// Manage catchall term
-		//
-		if _, ok := ma.metrics[catchAllName]; !ok {
-			ma.metrics[catchAllName] = make(assessment_model.GuaranteeData, 0)
+	scms := []cimi.ServiceContainerMetric{}
+	for _, si := range sis {
+
+		for _, container := range ma.containers(si) {
+
+			aux, err := ma.repository.GetServiceContainerMetrics("", container, from, to)
+			if err != nil {
+				return nil
+			}
+			scms = append(scms, aux...)
 		}
-		ma.metrics[catchAllName] = append(ma.metrics[catchAllName], data)
+	}
+	av := calculateAvailability(scms, from, to)
+
+	return []model.MetricValue{
+		model.MetricValue{
+			Key:      Availability,
+			Value:    av,
+			DateTime: to,
+		},
 	}
 }
 
-func (ma *adapter) GetValues(gt model.Guarantee, vars []string) assessment_model.GuaranteeData {
-	// XXX We are assuming for IT-1 only one var per constraint
+func (ma *adapter) containers(si cimi.ServiceInstance) []string {
+	result := make([]string, 0, len(si.Agents))
+	// TODO: We must distinguist between service type
+	for _, a := range si.Agents {
+		result = append(result, a.ContainerID)
+	}
+	return result
+}
 
-	var op = operationName(gt.Name)
-	return ma.metrics[op]
+func getDefaultFrom(a *model.Agreement, gt model.Guarantee) time.Time {
+	if a.Assessment == nil {
+		return a.Details.Creation
+	}
+	var defaultFrom = a.Assessment.GetGuarantee(gt.Name).LastExecution
+	if defaultFrom.IsZero() {
+		defaultFrom = a.Assessment.LastExecution
+	}
+	if defaultFrom.IsZero() {
+		defaultFrom = a.Details.Creation
+	}
+	return defaultFrom
+}
+
+func getFromForVariable(v model.Variable, defaultFrom, to time.Time) time.Time {
+	if v.Aggregation != nil && v.Aggregation.Window != 0 {
+		return to.Add(-time.Duration(v.Aggregation.Window) * time.Second)
+	}
+	return defaultFrom
 }
