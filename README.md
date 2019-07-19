@@ -157,8 +157,20 @@ Create agreement from template:
 
 #### mF2C ####
 
+The following steps are suitable for the default settings for the mF2C project 
+(i.e., running with CIMI as repository)
+
+Add a template:
+
+    OUT=$(curl -k -X POST -d @resources/samples/template01cimi.json http://localhost:46030/templates)
+    TEMPLATE_ID=$(echo "$OUT" | jq -r ".id")
+
 Create agreement from template. The needed property is the user launching the service:
 
-    curl -k -X POST -d @resources/samples/create-agreement-mf2c.json https://localhost:8090/mf2c/create-agreement
+    IN=$(<resources/samples/create-agreement-cimi.json jq ".template_id=\"$TEMPLATE_ID\"")
+    OUT=$(echo "$IN" | curl -k -X POST -d @- http://localhost:46030/mf2c/create-agreement)
 
-    {"template_id":"t01","agreement_id":"9be511e8-347f-4a40-b784-e80789e4c65b","parameters":{"user":"a-user-id"}}
+Get agreement created:
+
+    AGREEMENT_ID=$(echo $OUT | jq -r ".agreement_id" | sed -e 's/agreement\///')
+    curl http://localhost:46030/agreements/$AGREEMENT_ID
