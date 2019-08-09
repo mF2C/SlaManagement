@@ -21,6 +21,10 @@
             {
                 "name": "availability",
                 "constraint": "availability > 90"
+            },
+            {
+                "name": "executiontime",
+                "constraint": "execution_time < 100"
             }
         ]
     }

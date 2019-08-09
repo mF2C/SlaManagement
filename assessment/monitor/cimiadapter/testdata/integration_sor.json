@@ -1,0 +1,10 @@
+{
+    "operation_id": "001",
+    "requesting_application_id": { "href": "XXX" },
+    "execution_length": 100.01,
+    "compute_node_id": "compute",
+    "expected_end_time": "2019-08-09T09:41:24.590Z",
+    "operation_name": "executiontime",
+    "result": "0.1",
+    "start_time": "2019-08-09T09:41:24.590Z"
+  }

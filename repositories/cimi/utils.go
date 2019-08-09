@@ -29,6 +29,13 @@ func ReadServiceInstance(path string) (ServiceInstance, error) {
 	return *o, err
 }
 
+// ReadServiceOperationReport returns a ServiceOperationReport read from file
+func ReadServiceOperationReport(path string) (ServiceOperationReport, error) {
+	res, err := readEntity(path, new(ServiceOperationReport))
+	o := res.(*ServiceOperationReport)
+	return *o, err
+}
+
 func readEntity(path string, result interface{}) (interface{}, error) {
 
 	f, err := os.Open(path)

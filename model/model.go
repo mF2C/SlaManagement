@@ -369,10 +369,16 @@ func (as *Assessment) GetGuarantee(name string) AssessmentGuarantee {
 	if as.Guarantees == nil {
 		return zero
 	}
-	if _, ok := as.Guarantees[name]; !ok {
+
+	var ag AssessmentGuarantee
+	var ok bool
+	if ag, ok = as.Guarantees[name]; !ok {
 		return zero
 	}
-	return as.Guarantees[name]
+	if ag.LastValues == nil {
+		ag.LastValues = LastValues{}
+	}
+	return ag
 }
 
 // Validate validates the consistency of a Details entity

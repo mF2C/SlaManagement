@@ -43,6 +43,7 @@ import (
 var repo cimi.Repository
 var a *model.Agreement
 var si *cimi.ServiceInstance
+var sor cimi.ServiceOperationReport
 var _T utils.Timeline
 
 /*
@@ -75,14 +76,33 @@ func TestIntegration(t *testing.T) {
 
 	adapter := New(repo)
 
-	result, err := assessment.EvaluateAgreement(a, adapter, now)
+	a, err = repo.GetAgreement(a.Id)
 	if err != nil {
-		log.Fatalf("Error evaluating agreement: %s", err.Error())
+		log.Fatalf("Could not read agreement %s from repository: %s", a.Id, err.Error())
 	}
+	// needs a proper initialized agreement
+	if a.Assessment == nil {
+		a.Assessment = new(model.Assessment)
+	}
+
+	result := assessment.AssessAgreement(a, adapter, now)
+	repo.UpdateAgreement(a)
+	a, _ = repo.GetAgreement(a.Id)
+
+	/*
+	 * We make the assessment pass twice to catch bugs due to CIMI removing empty maps.
+	 * E.g., Assessment.Guarantee[x].LastValues could be nil even if initialized in a previous
+	 * execution.
+	 */
+
+	storeMeasures()
+	result = assessment.AssessAgreement(a, adapter, now)
+	repo.UpdateAgreement(a)
+
 	/*
 	 * The calculated availability should be around 50
 	 */
-	if len(result.GetViolations()) != 1 {
+	if len(result.GetViolations()) != 2 {
 		t.Errorf("Error in number of violations. Expected: %d; Actual: %d",
 			1, len(result.GetViolations()))
 	}
@@ -124,6 +144,11 @@ func loadSamples() {
 		si.Agents[i].DeviceID = fmt.Sprintf("device/%d", rand.Int31())
 		si.Agents[i].ContainerID = fmt.Sprintf("%08d", rand.Int31n(10000))
 	}
+
+	sor, err = cimi.ReadServiceOperationReport("testdata/integration_sor.json")
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func storeSamples() {
@@ -140,6 +165,9 @@ func storeSamples() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func storeMeasures() {
 
 	var scm cimi.ServiceContainerMetric
 
@@ -148,6 +176,12 @@ func storeSamples() {
 
 	scm = newServiceContainerMetric(si.Agents[0], 300, 450)
 	repo.CreateServiceContainerMetric(&scm)
+
+	sor.ServiceInstance.Href = si.Id
+	_, err := repo.CreateServiceOperationReport(&sor)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func newServiceContainerMetric(agent cimi.Agent, start, stop float64) cimi.ServiceContainerMetric {

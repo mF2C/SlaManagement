@@ -146,12 +146,12 @@ func TestRepository(t *testing.T) {
 
 func TestServiceOperationReports(t *testing.T) {
 	sor := &ServiceOperationReport{
-		Operation:       "op1",
+		Invocation:      "an-invocation-id",
 		ServiceInstance: Href{Href: "service-instance/5614321423"},
 		ExecutionTime:   1000.1,
 		ComputeNodeID:   "compute",
 		ExpectedEndTime: time.Now(),
-		OperationName:   "op1",
+		Operation:       "op1",
 		Result:          "0",
 		StartTime:       time.Now(),
 	}
