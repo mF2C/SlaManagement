@@ -1,0 +1,13 @@
+version: 2
+jobs:
+  build:
+    docker:
+    - image: circleci/golang:1.11
+    working_directory: /go/src/SLALite
+    steps:
+    - checkout
+    - run: dep ensure
+    - run: make build
+    - run: make test
+
+
