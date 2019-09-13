@@ -1,0 +1,15 @@
+version:2
+jobs:
+  build:
+    docker:
+      - image: golang:alpine
+    steps:
+      - checkout
+      -run: 
+        name: Compile
+        command: make build
+      -run:
+        name: Test
+        command: make test
+
+
