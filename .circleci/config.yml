@@ -5,11 +5,8 @@ jobs:
       - image: golang:alpine
     steps:
       - checkout
-      -run: 
-        name: Compile
-        command: make build
-      -run:
-        name: Test
-        command: make test
+      - run: go get -v -t -d ./...
+      - run: make build
+      - run: make test
 
 
