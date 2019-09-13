@@ -1,5 +1,8 @@
 # SLALite #
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![CircleCI](https://circleci.com/gh/mF2C/SlaManagement.svg?style=svg)](https://circleci.com/gh/mF2C/SlaManagement)
+
 ## Description ##
 
 The SLALite is a lightweight implementation of an SLA system, inspired by the
