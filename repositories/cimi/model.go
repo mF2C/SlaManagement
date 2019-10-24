@@ -21,6 +21,14 @@ import (
 	"time"
 )
 
+const (
+	// CompssType is the type of a COMPSS serviceInstance
+	CompssType ServiceType = "compss"
+)
+
+// ServiceType is the type a ServiceInstance can be
+type ServiceType string
+
 // Interval indicates an interval between two points of time
 type Interval struct {
 	Start time.Time
@@ -139,31 +147,32 @@ type serviceContainerMetricCollection struct {
 
 // ServiceInstance is the entity that represents the execution of a service
 type ServiceInstance struct {
-	Id             string    `json:"id"`
-	ACL            ACL       `json:"acl"`
-	User           string    `json:"user"`
-	DeviceID       string    `json:"device_id"`
-	DeviceIP       string    `json:"device_ip"`
-	ParentDeviceID string    `json:"parent_device_id"`
-	ParentDeviceIP string    `json:"parent_device_ip"`
-	Service        string    `json:"service"`
-	Agreement      string    `json:"agreement"`
-	Status         string    `json:"status"`
-	ServiceType    string    `json:"service_type"`
-	Created        time.Time `json:"created"`
-	Updated        time.Time `json:"updated"`
-	Agents         []Agent   `json:"agents"`
+	Id             string      `json:"id"`
+	ACL            ACL         `json:"acl"`
+	User           string      `json:"user"`
+	DeviceID       string      `json:"device_id"`
+	DeviceIP       string      `json:"device_ip"`
+	ParentDeviceID string      `json:"parent_device_id"`
+	ParentDeviceIP string      `json:"parent_device_ip"`
+	Service        string      `json:"service"`
+	Agreement      string      `json:"agreement"`
+	Status         string      `json:"status"`
+	ServiceType    ServiceType `json:"service_type"`
+	Created        time.Time   `json:"created"`
+	Updated        time.Time   `json:"updated"`
+	Agents         []Agent     `json:"agents"`
 }
 
 // Agent represents the list of agents running a service instance
 type Agent struct {
-	AppType     string      `json:"app_type"`
-	URL         string      `json:"url"`
-	DeviceID    string      `json:"device_id"`
-	Ports       interface{} `json:"ports"`
-	Status      string      `json:"status"`
-	ContainerID string      `json:"container_id"`
-	Allow       bool        `json:"allow"`
+	AppType      string      `json:"app_type"`
+	URL          string      `json:"url"`
+	DeviceID     string      `json:"device_id"`
+	Ports        interface{} `json:"ports"`
+	Status       string      `json:"status"`
+	ContainerID  string      `json:"container_id"`
+	Allow        bool        `json:"allow"`
+	MasterCompss bool        `json:"master_compss"`
 }
 
 // GetId implements model.Identity
