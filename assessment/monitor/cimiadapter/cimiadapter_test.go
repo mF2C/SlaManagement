@@ -62,7 +62,13 @@ func (r repository) GetServiceInstancesByAgreement(aID string) ([]cimi.ServiceIn
 }
 
 func (r repository) GetServiceContainerMetrics(device string, container string, startTime time.Time, stopTime time.Time) ([]cimi.ServiceContainerMetric, error) {
-	return r.containerMetrics, nil
+	result := make([]cimi.ServiceContainerMetric, 0, 2)
+	for _, scm := range r.containerMetrics {
+		if scm.Container == container {
+			result = append(result, scm)
+		}
+	}
+	return result, nil
 }
 
 func TestMain(m *testing.M) {
@@ -181,7 +187,7 @@ func TestGetAvailabilityValues(t *testing.T) {
 		},
 		[]cimi.ServiceContainerMetric{
 			cimi.ServiceContainerMetric{
-				Id:        "C01",
+				Container: "C01",
 				StartTime: tstart,
 				StopTime:  &tend,
 			},
@@ -193,7 +199,104 @@ func TestGetAvailabilityValues(t *testing.T) {
 	gt := a.Details.Guarantees[0]
 
 	values := adapter.GetValues(gt, []string{Availability}, time.Now())
-	if len(values) != 1 && d(values[0][Availability].Value.(float64), 100.0) > _MaxDelta {
+	if len(values) != 1 || d(values[0][Availability].Value.(float64), 100.0) > _MaxDelta {
+		t.Errorf("Error calculating availability. values = %v", values)
+	}
+}
+
+func TestFromAfterCreation(t *testing.T) {
+	a, err := readAgreement("testdata/b.json")
+	if err != nil {
+		t.Fatalf("Error loading agreement")
+	}
+	if v, _ := a.Details.GetVariable("availability"); v.Aggregation.Window != 600 {
+		t.Fatalf("Error in agreement schema")
+	}
+	// Creation was 100 seconds ago
+	a.Details.Creation = tend.Add(-100 * time.Second)
+
+	si1 := "service-instance1"
+	r := repository{
+		[]cimi.ServiceOperationReport{},
+		[]cimi.ServiceInstance{
+			cimi.ServiceInstance{
+				Id:        si1,
+				Agreement: a.Id,
+				Agents: []cimi.Agent{
+					cimi.Agent{
+						ContainerID: "C01",
+					},
+				},
+			},
+		},
+		[]cimi.ServiceContainerMetric{
+			cimi.ServiceContainerMetric{
+				Container: "C01",
+				StartTime: tstart,
+				StopTime:  &tend,
+			},
+		},
+	}
+	adapter := New(r)
+
+	adapter = adapter.Initialize(&a)
+	gt := a.Details.Guarantees[0]
+
+	values := adapter.GetValues(gt, []string{Availability}, time.Now())
+	if len(values) != 0 {
+		t.Errorf("No values expected (a.Details.Creation > now-time.Window). values = %v", values)
+	}
+
+}
+func TestGetCompssAvailabilityValues(t *testing.T) {
+	a, err := readAgreement("testdata/b.json")
+	if err != nil {
+		t.Fatalf("Error loading agreement")
+	}
+	if v, _ := a.Details.GetVariable("availability"); v.Aggregation.Window != 600 {
+		t.Fatalf("Error in agreement schema")
+	}
+
+	si1 := "service-instance1"
+	r := repository{
+		[]cimi.ServiceOperationReport{},
+		[]cimi.ServiceInstance{
+			cimi.ServiceInstance{
+				Id:          si1,
+				Agreement:   a.Id,
+				ServiceType: cimi.CompssType,
+				Agents: []cimi.Agent{
+					cimi.Agent{
+						ContainerID:  "C01",
+						MasterCompss: true,
+					},
+					cimi.Agent{
+						ContainerID:  "C02",
+						MasterCompss: false,
+					},
+				},
+			},
+		},
+		[]cimi.ServiceContainerMetric{
+			cimi.ServiceContainerMetric{
+				Container: "C02",
+				StartTime: tstart,
+				StopTime:  &tend,
+			},
+			cimi.ServiceContainerMetric{
+				Container: "C01",
+				StartTime: tend.Add(-300 * time.Second),
+				StopTime:  &tend,
+			},
+		},
+	}
+	adapter := New(r)
+
+	adapter = adapter.Initialize(&a)
+	gt := a.Details.Guarantees[0]
+
+	values := adapter.GetValues(gt, []string{Availability}, time.Now())
+	if len(values) != 1 || d(values[0][Availability].Value.(float64), 50) > _MaxDelta {
 		t.Errorf("Error calculating availability. values = %v", values)
 	}
 }

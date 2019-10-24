@@ -33,6 +33,8 @@ const (
 	// Availability is the name of the Availability variable on mF2C
 	Availability = "availability"
 
+	//compssType = cimi.CompssType
+
 	// catchAllName is the name of the CatchAll guarantee term (i.e., term that applies to operations)
 	catchAllName = operationName("*")
 )
@@ -84,7 +86,9 @@ func (ma *adapter) GetValues(gt model.Guarantee, vars []string, to time.Time) as
 		if name == ExecTime {
 			values[ExecTime] = ma.retrieveExecTime(gt, from)
 		} else {
-			values[Availability] = ma.retrieveAvailability(gt, from, to)
+			if from.After(a.Details.Creation) {
+				values[Availability] = ma.retrieveAvailability(gt, from, to)
+			}
 		}
 	}
 	result := buildExpressionData(values)
@@ -149,7 +153,6 @@ func (ma *adapter) retrieveAvailability(gt model.Guarantee, from, to time.Time) 
 
 	scms := []cimi.ServiceContainerMetric{}
 	for _, si := range sis {
-
 		for _, container := range ma.containers(si) {
 
 			aux, err := ma.repository.GetServiceContainerMetrics("", container, from, to)
@@ -172,9 +175,11 @@ func (ma *adapter) retrieveAvailability(gt model.Guarantee, from, to time.Time) 
 
 func (ma *adapter) containers(si cimi.ServiceInstance) []string {
 	result := make([]string, 0, len(si.Agents))
-	// TODO: We must distinguist between service type
+
 	for _, a := range si.Agents {
-		result = append(result, a.ContainerID)
+		if si.ServiceType != cimi.CompssType || a.MasterCompss {
+			result = append(result, a.ContainerID)
+		}
 	}
 	return result
 }
