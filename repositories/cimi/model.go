@@ -100,6 +100,9 @@ func (v *Violation) GetId() string {
 }
 
 // ServiceOperationReport represents the execution time of a service operation in DER
+// A ServiceOperationReport is created when an operation is executed, and it is
+// updated periodically until the operation has finished. ExecutionTime
+// holds zero until that time.
 type ServiceOperationReport struct {
 	Id              string    `json:"id"`
 	ServiceInstance Href      `json:"requesting_application_id"`

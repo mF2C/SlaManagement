@@ -295,7 +295,7 @@ func (r Repository) get(resource path, filter string, target interface{}) error 
 	if filter != "" {
 		url = fmt.Sprintf("%s?$filter=%s", url, filter)
 	}
-	//log.Printf("CimiRepository.read() url=%s", url)
+	log.Printf("CimiRepository.read() url=%s", url)
 
 	err := r.request(GET, url, nil, target)
 
@@ -637,7 +637,7 @@ func (r Repository) GetServiceOperationReportsByDate(serviceInstance string, fro
 
 	t := from.UTC().Format(time.RFC3339)
 	err := r.get(pathOperations,
-		fmt.Sprintf("(requesting_application_id/href=\"%s\")and(created>\"%s\")", serviceInstance, t), target)
+		fmt.Sprintf("(requesting_application_id/href=\"%s\")and(updated>\"%s\")and(execution_length>0)", serviceInstance, t), target)
 	return target.ServiceOperationReports, err
 }
 
